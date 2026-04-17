@@ -1,8 +1,15 @@
 <aside class="barra-lateral">
     <div class="marca">
-        <div class="marca-simbolo">JG</div>
+
+    <div class="marca-simbolo">
+        <div class="marca-logo-contenedor">
+            <img src="/Estructurasjg/public/imagenes/marca/logo-login-principal.png" alt="Logo de Estructuras JG" class="imagen-marca-simbolo">
+        </div>
+    </div>
+
+
         <h1>Estructuras JG</h1>
-        <p>Sistema de inventario con navegacion simple, clara y sin modulos repetidos.</p>
+        <p>Manten tu inventario actualizado con mas agilidad.</p>
     </div>
 
     <nav class="menu" aria-label="Navegacion principal">
@@ -17,8 +24,4 @@
             </a>
         <?php endforeach; ?>
     </nav>
-
-    <div class="acciones">
-        <a href="<?= htmlspecialchars($urlSalir, ENT_QUOTES, 'UTF-8') ?>" class="enlace-salir">Cerrar sesion</a>
-    </div>
 </aside>
