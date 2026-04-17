@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/preparar_plantilla.php';
+require_once __DIR__ . '/../../configuracion/rutas.php';
+
+$datosPlantilla = prepararDatosPlantillaPanel(
+    $autenticacion ?? [],
+    $permisos ?? [],
+    [
+        'tituloPagina' => $tituloPagina ?? null,
+        'tituloSeccion' => $tituloSeccion ?? null,
+        'descripcionSeccion' => $descripcionSeccion ?? null,
+        'moduloActivo' => $moduloActivo ?? null,
+        'resaltarConfiguracion' => $resaltarConfiguracion ?? null,
+        'contenidoModulo' => $contenidoModulo ?? null,
+        'scriptsModulo' => $scriptsModulo ?? null,
+    ]
+);
+
+$tituloPagina = $datosPlantilla['tituloPagina'];
+$tituloSeccion = $datosPlantilla['tituloSeccion'];
+$descripcionSeccion = $datosPlantilla['descripcionSeccion'];
+$moduloActivo = $datosPlantilla['moduloActivo'];
+$resaltarConfiguracion = $datosPlantilla['resaltarConfiguracion'];
+$contenidoModulo = $datosPlantilla['contenidoModulo'];
+$scriptsModulo = $datosPlantilla['scriptsModulo'];
+$itemsMenu = $datosPlantilla['itemsMenu'];
+$puedeVerConfiguracion = $datosPlantilla['puedeVerConfiguracion'];
+$nombreUsuario = $datosPlantilla['nombreUsuario'];
+$usuarioAcceso = $datosPlantilla['usuarioAcceso'];
+$nombreRol = $datosPlantilla['nombreRol'];
+$urlHojaEstilosPanel = construirUrlPublica('css/panel/plantilla.css');
+$urlPanel = construirUrlPublica('panel.php');
+$urlConfiguracion = construirUrlPublica('panel.php?modulo=configuracion');
+$urlSalir = construirUrlPublica('salir.php');
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($tituloPagina, ENT_QUOTES, 'UTF-8') ?> | Estructuras JG</title>
+    <link rel="stylesheet" href="<?= htmlspecialchars($urlHojaEstilosPanel, ENT_QUOTES, 'UTF-8') ?>">
+</head>
+<body>
+    <div class="distribucion">
+        <?php require __DIR__ . '/parciales/barra_lateral.php'; ?>
+
+        <main class="contenido">
+            <?php require __DIR__ . '/parciales/barra_superior.php'; ?>
+
+            <section class="hero">
+                <h2><?= htmlspecialchars($tituloSeccion, ENT_QUOTES, 'UTF-8') ?></h2>
+                <p><?= htmlspecialchars($descripcionSeccion, ENT_QUOTES, 'UTF-8') ?></p>
+            </section>
+
+            <section class="contenido-personalizado">
+                <?= $contenidoModulo ?>
+            </section>
+        </main>
+    </div>
+</body>
+<?= $scriptsModulo ?>
+</html>
