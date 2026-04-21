@@ -2,80 +2,87 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../modelos/Producto.php';
+
 /**
- * Prepara la informacion visible del modulo de productos para mantener
- * la vista enfocada en estructura y presentacion.
+ * Prepara datos del modulo de productos en modo consulta.
  */
-function prepararDatosModuloProductos(): array
+function prepararDatosModuloProductos(array $contexto = []): array
 {
+    $formatearMoneda = static fn(float $valor): string => '$ ' . number_format($valor, 0, ',', '.');
+    /** @var Producto[] $productos */
+    $productos = $contexto['catalogoProductos'] ?? [];
+    $paginacion = $contexto['paginacion'] ?? [
+        'paginaActual' => 1,
+        'totalPaginas' => 1,
+        'totalRegistros' => count($productos),
+        'porPagina' => 20,
+        'opcionesPorPagina' => [10, 20, 50],
+    ];
+
+    $catalogoProductos = array_map(
+        static function (Producto $producto) use ($formatearMoneda): array {
+            return [
+                'id_producto' => $producto->idProducto,
+                'factura' => trim($producto->ultimaFactura) !== '' ? $producto->ultimaFactura : 'Sin factura',
+                'codigo' => $producto->codigo,
+                'descripcion' => $producto->descripcion,
+                'proveedor' => $producto->nombreProveedor,
+                'bodegas' => trim($producto->resumenBodegas) !== ''
+                    ? (preg_replace('/\s*\(\d+\)/', '', $producto->resumenBodegas) ?: 'Sin bodega')
+                    : 'Sin bodega',
+                'stock' => (string) $producto->stock,
+                'precio' => $formatearMoneda($producto->precio),
+            ];
+        },
+        $productos
+    );
+
+    $resumenIndicadores = [
+        [
+            'etiqueta' => 'Productos registrados',
+            'valor' => (string) ($contexto['totalProductos'] ?? count($productos)),
+        ],
+        [
+            'etiqueta' => 'Stock total',
+            'valor' => number_format((float) ($contexto['stockTotal'] ?? 0), 0, '.', ','),
+        ],
+        [
+            'etiqueta' => 'Stock bajo',
+            'valor' => (string) ($contexto['stockBajo'] ?? 0),
+        ],
+        [
+            'etiqueta' => 'Valor estimado',
+            'valor' => $formatearMoneda((float) ($contexto['valorEstimado'] ?? 0)),
+        ],
+    ];
+
     return [
         'tituloPagina' => 'Productos',
-        'tituloSeccion' => 'Gestion de productos',
-        'descripcionSeccion' => 'Consolida el catalogo del inventario en una sola vista: tabla central, datos clave del stock y acciones visuales de mantenimiento.',
+        'tituloSeccion' => 'Consulta de productos',
+        'descripcionSeccion' => 'Este modulo es solo de consulta. El stock se actualiza por movimientos operativos del inventario.',
         'moduloActivo' => 'productos',
         'resaltarConfiguracion' => false,
-        'resumenIndicadores' => [
-            ['etiqueta' => 'Productos registrados', 'valor' => '142'],
-            ['etiqueta' => 'Stock total', 'valor' => '3,428'],
-            ['etiqueta' => 'Stock bajo', 'valor' => '11'],
-            ['etiqueta' => 'Valor estimado', 'valor' => '$ 84,250.00'],
-        ],
-        'catalogoProductos' => [
-            [
-                'codigo' => 'PRD-00125',
-                'descripcion' => 'Perfil estructural galvanizado',
-                'proveedor' => 'Acero Nacional SAS',
-                'stock' => '95',
-                'precio' => '$ 35.50',
-                'estado' => 'Disponible',
-                'tipoEstado' => 'ok',
-            ],
-            [
-                'codigo' => 'PRD-00102',
-                'descripcion' => 'Tubo rectangular 2x1',
-                'proveedor' => 'Ferreteria Industrial Norte',
-                'stock' => '32',
-                'precio' => '$ 18.90',
-                'estado' => 'Stock medio',
-                'tipoEstado' => 'alerta',
-            ],
-            [
-                'codigo' => 'PRD-00061',
-                'descripcion' => 'Angulo estructural 3/16',
-                'proveedor' => 'Materiales JG',
-                'stock' => '5',
-                'precio' => '$ 41.00',
-                'estado' => 'Stock bajo',
-                'tipoEstado' => 'critico',
-            ],
-        ],
-        'formularioProducto' => [
-            'codigo' => 'PRD-00143',
-            'descripcion' => 'Viga laminada estructural',
-            'proveedores' => [
-                'Acero Nacional SAS',
-                'Materiales JG',
-            ],
-            'stock' => '24',
-            'precio' => '57.80',
-        ],
+        'resumenIndicadores' => $resumenIndicadores,
+        'catalogoProductos' => $catalogoProductos,
+        'paginacion' => $paginacion,
         'controlVisual' => [
             [
-                'titulo' => 'CRUD disponible',
-                'detalle' => 'La interfaz contempla crear, editar y eliminar productos.',
-                'estado' => 'Activo',
+                'titulo' => 'Origen del catalogo',
+                'detalle' => 'Cada fila proviene directamente de la tabla productos.',
+                'estado' => 'BD real',
                 'tipoEstado' => 'ok',
             ],
             [
-                'titulo' => 'Proveedor asociado',
-                'detalle' => 'Cada producto mantiene vinculo visual con su proveedor.',
-                'estado' => 'Trazable',
+                'titulo' => 'Actualizacion de stock',
+                'detalle' => 'Entradas y salidas actualizan stock automaticamente desde sus modulos.',
+                'estado' => 'Sincronizado',
                 'tipoEstado' => 'ok',
             ],
             [
-                'titulo' => 'Inventario sin duplicacion',
-                'detalle' => 'Este modulo concentra el catalogo completo sin repetir tarjetas en otras pantallas.',
-                'estado' => 'Unificado',
+                'titulo' => 'Politica de modulo',
+                'detalle' => 'No se crean productos aqui para evitar duplicidad de registro.',
+                'estado' => 'Solo lectura',
                 'tipoEstado' => 'alerta',
             ],
         ],

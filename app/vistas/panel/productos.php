@@ -3,8 +3,40 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/preparar_productos.php';
+require_once __DIR__ . '/../../modelos/RepositorioProducto.php';
 
-$datosModulo = prepararDatosModuloProductos();
+$repositorioProducto = new RepositorioProducto();
+
+$opcionesPorPagina = [10, 20, 50];
+$porPagina = (int) ($_GET['por_pagina'] ?? 20);
+if (!in_array($porPagina, $opcionesPorPagina, true)) {
+    $porPagina = 20;
+}
+$paginaActual = max(1, (int) ($_GET['pagina'] ?? 1));
+
+$totalRegistrosCatalogo = $repositorioProducto->contarTotal();
+$totalPaginas = max(1, (int) ceil($totalRegistrosCatalogo / $porPagina));
+if ($paginaActual > $totalPaginas) {
+    $paginaActual = $totalPaginas;
+}
+$offset = ($paginaActual - 1) * $porPagina;
+
+$catalogoProductos = $repositorioProducto->obtenerPaginado($porPagina, $offset);
+
+$datosModulo = prepararDatosModuloProductos([
+    'catalogoProductos' => $catalogoProductos,
+    'totalProductos' => $repositorioProducto->contarTotal(),
+    'stockTotal' => $repositorioProducto->sumarStockTotal(),
+    'stockBajo' => $repositorioProducto->contarStockBajo(),
+    'valorEstimado' => $repositorioProducto->calcularValorEstimado(),
+    'paginacion' => [
+        'paginaActual' => $paginaActual,
+        'totalPaginas' => $totalPaginas,
+        'totalRegistros' => $totalRegistrosCatalogo,
+        'porPagina' => $porPagina,
+        'opcionesPorPagina' => $opcionesPorPagina,
+    ],
+]);
 
 $tituloPagina = $datosModulo['tituloPagina'];
 $tituloSeccion = $datosModulo['tituloSeccion'];
@@ -14,8 +46,8 @@ $resaltarConfiguracion = $datosModulo['resaltarConfiguracion'];
 
 $resumenIndicadores = $datosModulo['resumenIndicadores'];
 $catalogoProductos = $datosModulo['catalogoProductos'];
-$formularioProducto = $datosModulo['formularioProducto'];
 $controlVisual = $datosModulo['controlVisual'];
+$paginacion = $datosModulo['paginacion'];
 
 ob_start();
 require __DIR__ . '/parciales/productos/contenido.php';

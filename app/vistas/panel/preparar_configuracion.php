@@ -3,66 +3,68 @@
 declare(strict_types=1);
 
 /**
- * Prepara los datos visibles del modulo de configuracion para dejar
- * la vista principal enfocada en la estructura.
+ * Prepara los datos visibles del modulo de configuracion de usuarios/permisos.
  */
-function prepararDatosModuloConfiguracion(): array
+function prepararDatosModuloConfiguracion(
+    array $formularioUsuario,
+    array $usuarios,
+    array $roles,
+    string $mensajeExito = '',
+    string $mensajeError = ''
+): array
 {
+    $rolesOpciones = array_map(
+        static fn(array $rol): array => [
+            'id' => (int) ($rol['id_rol'] ?? 0),
+            'nombre' => (string) ($rol['nombre'] ?? ''),
+        ],
+        $roles
+    );
+
+    $usuariosNormalizados = array_map(
+        static function (array $usuario): array {
+            $marcaTiempo = strtotime((string) ($usuario['ultimo_acceso'] ?? ''));
+            $ultimoAcceso = $marcaTiempo !== false ? date('d/m/Y H:i', $marcaTiempo) : 'Sin acceso';
+
+            return [
+                'id_usuario' => (int) ($usuario['id_usuario'] ?? 0),
+                'nombre' => (string) ($usuario['nombre'] ?? ''),
+                'usuario' => (string) ($usuario['usuario'] ?? ''),
+                'rol' => (string) ($usuario['rol_nombre'] ?? ''),
+                'estado' => ((int) ($usuario['estado'] ?? 0)) === 1 ? 'Activo' : 'Inactivo',
+                'ultimo_acceso' => $ultimoAcceso,
+            ];
+        },
+        $usuarios
+    );
+
+    $rolesConPermisos = array_map(
+        static fn(array $rol): array => [
+            'id_rol' => (int) ($rol['id_rol'] ?? 0),
+            'nombre' => (string) ($rol['nombre'] ?? ''),
+            'permisos' => [
+                'registrar_productos' => (int) ($rol['p_registrar_productos'] ?? 0) === 1,
+                'modificar_productos' => (int) ($rol['p_modificar_productos'] ?? 0) === 1,
+                'registrar_movimientos' => (int) ($rol['p_registrar_movimientos'] ?? 0) === 1,
+                'consultar_movimientos' => (int) ($rol['p_consultar_movimientos'] ?? 0) === 1,
+                'gestionar_roles' => (int) ($rol['p_gestionar_roles'] ?? 0) === 1,
+                'configuracion' => (int) ($rol['p_configuracion'] ?? 0) === 1,
+            ],
+        ],
+        $roles
+    );
+
     return [
         'tituloPagina' => 'Configuracion',
-        'tituloSeccion' => 'Configuracion del sistema',
-        'descripcionSeccion' => 'Pantalla de ajustes del sistema con controles visibles para administracion, permisos y apariencia, separada de los modulos operativos.',
+        'tituloSeccion' => 'Configuracion de usuarios y permisos',
+        'descripcionSeccion' => 'Crea y modifica usuarios del sistema, y controla los permisos de cada rol.',
         'moduloActivo' => '',
         'resaltarConfiguracion' => true,
-        'configuracionUsuarios' => [
-            'permitirNuevosUsuarios' => true,
-            'sesionUnica' => false,
-            'rolPorDefecto' => ['Operador', 'Consulta', 'Administrador'],
-        ],
-        'roles' => [
-            [
-                'titulo' => 'Rol administrador',
-                'detalle' => 'Acceso completo a configuracion y operaciones del sistema.',
-                'etiqueta' => 'Editar',
-                'activo' => true,
-            ],
-            [
-                'titulo' => 'Rol operador',
-                'detalle' => 'Movimientos de inventario, consulta y ejecucion diaria.',
-                'etiqueta' => 'Editar',
-                'activo' => false,
-            ],
-            [
-                'titulo' => 'Rol consulta',
-                'detalle' => 'Lectura general sin permisos de modificacion.',
-                'etiqueta' => 'Editar',
-                'activo' => false,
-            ],
-        ],
-        'nivelesControl' => ['Estricto', 'Intermedio', 'Flexible'],
-        'temasVisuales' => [
-            ['titulo' => 'Claro', 'detalle' => 'Equilibrado y profesional', 'activo' => true],
-            ['titulo' => 'Suave', 'detalle' => 'Menos contraste visual', 'activo' => false],
-            ['titulo' => 'Industrial', 'detalle' => 'Tonos mas sobrios', 'activo' => false],
-        ],
-        'tamanosLetra' => [
-            ['titulo' => 'Compacto', 'activo' => false],
-            ['titulo' => 'Normal', 'activo' => true],
-            ['titulo' => 'Grande', 'activo' => false],
-        ],
-        'ajustesInterfaz' => [
-            [
-                'titulo' => 'Animaciones suaves',
-                'detalle' => 'Mejora la transicion visual del panel.',
-                'activo' => true,
-            ],
-            [
-                'titulo' => 'Tarjetas compactas',
-                'detalle' => 'Reduce espacios para mostrar mas informacion.',
-                'activo' => false,
-            ],
-        ],
-        'ayudaContextual' => true,
-        'notaConfiguracion' => 'La navegacion principal sigue reservada exclusivamente para Entradas, Productos, Proveedores y Salidas.',
+        'formularioUsuario' => $formularioUsuario,
+        'rolesOpciones' => $rolesOpciones,
+        'usuarios' => $usuariosNormalizados,
+        'rolesConPermisos' => $rolesConPermisos,
+        'mensajeExito' => $mensajeExito,
+        'mensajeError' => $mensajeError,
     ];
 }

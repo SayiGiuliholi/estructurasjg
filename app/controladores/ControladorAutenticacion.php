@@ -24,7 +24,24 @@ final class ControladorAutenticacion
         $repositorioUsuario = new RepositorioUsuario();
         $usuario = $repositorioUsuario->buscarPorUsuario($usuarioIngresado);
 
-        if ($usuario === null || !password_verify($contrasenaIngresada, $usuario->contrasena)) {
+        if ($usuario === null) {
+            return [
+                'exito' => false,
+                'mensaje' => 'Las credenciales ingresadas no son validas.',
+            ];
+        }
+
+        $contrasenaValida = password_verify($contrasenaIngresada, $usuario->contrasena);
+
+        // Compatibilidad para cuentas antiguas guardadas sin hash.
+        if (!$contrasenaValida && hash_equals($usuario->contrasena, $contrasenaIngresada)) {
+            $nuevoHash = password_hash($contrasenaIngresada, PASSWORD_DEFAULT);
+            $repositorioUsuario->actualizarHashContrasena($usuario->idUsuario, $nuevoHash);
+            $usuario->contrasena = $nuevoHash;
+            $contrasenaValida = true;
+        }
+
+        if (!$contrasenaValida) {
             return [
                 'exito' => false,
                 'mensaje' => 'Las credenciales ingresadas no son validas.',
@@ -35,6 +52,21 @@ final class ControladorAutenticacion
             return [
                 'exito' => false,
                 'mensaje' => 'Tu usuario esta inactivo. Contacta al administrador.',
+            ];
+        }
+
+        $tieneAlgunPermiso = false;
+        foreach ($usuario->rol->permisos as $permiso) {
+            if ((int) $permiso === 1) {
+                $tieneAlgunPermiso = true;
+                break;
+            }
+        }
+
+        if (!$tieneAlgunPermiso) {
+            return [
+                'exito' => false,
+                'mensaje' => 'Tu rol no tiene permisos activos. Solicita revision al administrador.',
             ];
         }
 

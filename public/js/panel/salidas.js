@@ -1,45 +1,259 @@
 (function () {
-    var stock = document.getElementById('salida-stock');
-    var cantidad = document.getElementById('salida-cantidad');
-    var precio = document.getElementById('salida-precio');
-    var descuento = document.getElementById('salida-descuento');
-    var subtotal = document.getElementById('salida-subtotal');
-    var total = document.getElementById('salida-total');
-    var mensaje = document.getElementById('salida-validacion');
-    var estado = document.getElementById('estado-stock');
+    var apiProducto = window.URL_API_PRODUCTO_SALIDA || '';
+    var selectBodega = document.getElementById('salida-bodega');
+    var cuerpoDetalles = document.getElementById('salida-detalles-body');
+    var botonAgregar = document.getElementById('salida-agregar-linea');
+    var totalFactura = document.getElementById('salida-total-factura');
+    var mensajeValidacion = document.getElementById('salida-validacion');
+    var formulario = document.getElementById('form-salidas');
 
-    if (!stock || !cantidad || !precio || !descuento || !subtotal || !total || !mensaje || !estado) {
+    if (!selectBodega || !cuerpoDetalles || !botonAgregar || !totalFactura || !mensajeValidacion || !formulario) {
         return;
     }
 
-    function recalcularSalida() {
-        var stockValor = Number(stock.value || 0);
-        var cantidadValor = Number(cantidad.value || 0);
-        var precioValor = Number(precio.value || 0);
-        var descuentoValor = Number(descuento.value || 0);
-        var subtotalValor = cantidadValor * precioValor;
-        var totalValor = subtotalValor - (subtotalValor * (descuentoValor / 100));
+    function obtenerNumero(valor, fallback) {
+        var texto = typeof valor === 'string' ? valor : String(valor);
+        var limpio = texto.replace(/[^\d,.\-]/g, '').trim();
 
-        subtotal.value = '$ ' + subtotalValor.toFixed(2);
-        total.value = '$ ' + totalValor.toFixed(2);
+        if (limpio === '') {
+            return fallback;
+        }
+        // En este modulo usamos valores enteros para moneda visual (ej: 300.000).
+        // Se eliminan separadores para calcular correctamente.
+        var normalizado = limpio.replace(/[.,]/g, '');
 
-        if (cantidadValor > stockValor) {
-            mensaje.textContent = 'La cantidad supera el stock disponible. Ajusta el pedido antes de registrar la salida.';
-            mensaje.style.color = '#b42318';
-            estado.textContent = 'Sin stock';
-            estado.className = 'estado critico';
+        var numero = Number(normalizado);
+        return Number.isFinite(numero) ? numero : fallback;
+    }
+
+    function formatearMoneda(valor) {
+        return '$ ' + Number(valor || 0).toLocaleString('es-CO', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+
+    function formatearNumero(valor) {
+        return Number(valor || 0).toLocaleString('es-CO', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
+    }
+
+    function setMensaje(texto, tipo) {
+        mensajeValidacion.textContent = texto;
+        mensajeValidacion.style.color = tipo === 'error' ? '#b42318' : '#667085';
+    }
+
+    function limpiarFila(fila) {
+        var descripcion = fila.querySelector('.js-salida-descripcion');
+        var stock = fila.querySelector('.js-salida-stock');
+        var cantidad = fila.querySelector('.js-salida-cantidad');
+        var precio = fila.querySelector('.js-salida-precio');
+        var totalLinea = fila.querySelector('.js-salida-total-linea');
+
+        if (descripcion) {
+            descripcion.value = '';
+        }
+        if (stock) {
+            stock.value = '0';
+        }
+        if (cantidad) {
+            cantidad.value = '1';
+            cantidad.removeAttribute('max');
+        }
+        if (precio) {
+            precio.value = '0';
+        }
+        if (totalLinea) {
+            totalLinea.value = formatearMoneda(0);
+        }
+    }
+
+    function recalcularFila(fila) {
+        var stock = fila.querySelector('.js-salida-stock');
+        var cantidad = fila.querySelector('.js-salida-cantidad');
+        var precio = fila.querySelector('.js-salida-precio');
+        var totalLinea = fila.querySelector('.js-salida-total-linea');
+
+        if (!stock || !cantidad || !precio || !totalLinea) {
+            return { total: 0, valida: true };
+        }
+
+        var stockValor = Math.max(0, obtenerNumero(stock.value, 0));
+        var cantidadValor = Math.max(0, obtenerNumero(cantidad.value, 0));
+        var precioValor = Math.max(0, obtenerNumero(precio.value, 0));
+        var total = cantidadValor * precioValor;
+        var valida = cantidadValor <= stockValor;
+
+        totalLinea.value = formatearMoneda(total);
+        return { total: total, valida: valida };
+    }
+
+    function recalcularFactura() {
+        var filas = cuerpoDetalles.querySelectorAll('tr.detalle-salida');
+        var total = 0;
+        var hayErrorStock = false;
+
+        filas.forEach(function (fila) {
+            var resultado = recalcularFila(fila);
+            total += resultado.total;
+            if (!resultado.valida) {
+                hayErrorStock = true;
+            }
+        });
+
+        totalFactura.value = formatearMoneda(total);
+
+        if (hayErrorStock) {
+            setMensaje('Hay lineas donde la cantidad supera el stock de bodega.', 'error');
+            return false;
+        }
+
+        setMensaje('Factura validada por stock en cada linea.', 'ok');
+        return true;
+    }
+
+    function autocompletarFila(fila) {
+        var inputCodigo = fila.querySelector('.js-salida-codigo');
+        var inputDescripcion = fila.querySelector('.js-salida-descripcion');
+        var inputStock = fila.querySelector('.js-salida-stock');
+        var inputCantidad = fila.querySelector('.js-salida-cantidad');
+        var inputPrecio = fila.querySelector('.js-salida-precio');
+        var idBodega = (selectBodega.value || '').trim();
+        var codigo = inputCodigo ? (inputCodigo.value || '').trim() : '';
+
+        if (!inputCodigo || !inputDescripcion || !inputStock || !inputCantidad || !inputPrecio) {
             return;
         }
 
-        mensaje.textContent = 'Stock suficiente para completar la venta.';
-        mensaje.style.color = '#667085';
-        estado.textContent = 'Correcto';
-        estado.className = 'estado ok';
+        if (apiProducto === '' || idBodega === '' || codigo === '') {
+            limpiarFila(fila);
+            recalcularFactura();
+            return;
+        }
+
+        var url = apiProducto + '?codigo=' + encodeURIComponent(codigo) + '&id_bodega=' + encodeURIComponent(idBodega);
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(function (respuesta) {
+                if (!respuesta.ok) {
+                    throw new Error('No se encontro el producto en la bodega seleccionada.');
+                }
+
+                return respuesta.json();
+            })
+            .then(function (datos) {
+                if (!datos.ok || !datos.producto) {
+                    throw new Error(datos.mensaje || 'No se pudo cargar el producto.');
+                }
+
+                inputDescripcion.value = datos.producto.descripcion || '';
+                inputStock.value = String(datos.producto.stock_bodega || 0);
+                inputPrecio.value = formatearNumero(datos.producto.precio || 0);
+
+                if (obtenerNumero(inputCantidad.value, 0) <= 0) {
+                    inputCantidad.value = '1';
+                }
+
+                inputCantidad.max = String(datos.producto.stock_bodega || 0);
+                recalcularFactura();
+            })
+            .catch(function (error) {
+                limpiarFila(fila);
+                setMensaje(error.message || 'No se pudo autocompletar una linea.', 'error');
+            });
     }
 
-    [stock, cantidad, precio, descuento].forEach(function (campo) {
-        campo.addEventListener('input', recalcularSalida);
+    function agregarLinea() {
+        var primeraFila = cuerpoDetalles.querySelector('tr.detalle-salida');
+        if (!primeraFila) {
+            return;
+        }
+
+        var nuevaFila = primeraFila.cloneNode(true);
+        limpiarFila(nuevaFila);
+        cuerpoDetalles.appendChild(nuevaFila);
+        recalcularFactura();
+    }
+
+    botonAgregar.addEventListener('click', agregarLinea);
+
+    cuerpoDetalles.addEventListener('click', function (evento) {
+        var botonQuitar = evento.target.closest('.js-salida-quitar-linea');
+        if (!botonQuitar) {
+            return;
+        }
+
+        var fila = botonQuitar.closest('tr.detalle-salida');
+        if (!fila) {
+            return;
+        }
+
+        var totalFilas = cuerpoDetalles.querySelectorAll('tr.detalle-salida').length;
+        if (totalFilas <= 1) {
+            limpiarFila(fila);
+        } else {
+            fila.remove();
+        }
+
+        recalcularFactura();
     });
 
-    recalcularSalida();
+    var temporizadorFila = null;
+
+    cuerpoDetalles.addEventListener('input', function (evento) {
+        var fila = evento.target.closest('tr.detalle-salida');
+        if (!fila) {
+            return;
+        }
+
+        if (evento.target.matches('.js-salida-cantidad')) {
+            recalcularFactura();
+            return;
+        }
+
+        if (evento.target.matches('.js-salida-codigo')) {
+            if (temporizadorFila !== null) {
+                clearTimeout(temporizadorFila);
+            }
+
+            temporizadorFila = setTimeout(function () {
+                autocompletarFila(fila);
+            }, 250);
+        }
+    });
+
+    cuerpoDetalles.addEventListener('blur', function (evento) {
+        if (!evento.target.matches('.js-salida-codigo')) {
+            return;
+        }
+
+        var fila = evento.target.closest('tr.detalle-salida');
+        if (fila) {
+            autocompletarFila(fila);
+        }
+    }, true);
+
+    selectBodega.addEventListener('change', function () {
+        var filas = cuerpoDetalles.querySelectorAll('tr.detalle-salida');
+        filas.forEach(function (fila) {
+            var codigo = fila.querySelector('.js-salida-codigo');
+            if (codigo && (codigo.value || '').trim() !== '') {
+                autocompletarFila(fila);
+            } else {
+                limpiarFila(fila);
+            }
+        });
+
+        recalcularFactura();
+    });
+
+    formulario.addEventListener('submit', function (evento) {
+        if (!recalcularFactura()) {
+            evento.preventDefault();
+        }
+    });
+
+    recalcularFactura();
 })();

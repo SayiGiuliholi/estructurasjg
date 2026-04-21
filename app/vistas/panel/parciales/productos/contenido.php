@@ -11,90 +11,73 @@
     <div class="cabecera-modulo">
         <div>
             <h3 class="subtitulo">Catalogo de productos</h3>
-            <p>Cada producto vive unicamente en este modulo para evitar duplicidad de vistas.</p>
-        </div>
-        <div class="botones-acciones">
-            <button type="button" class="boton-principal">Nuevo producto</button>
-            <button type="button" class="boton-secundario">Exportar</button>
+            <p>Vista de consulta en tiempo real del inventario registrado por movimientos.</p>
         </div>
     </div>
+
     <div class="tabla-contenedor">
-        <table class="tabla">
+        <table class="tabla tabla-historial-productos">
             <thead>
                 <tr>
-                    <th>Codigo</th>
-                    <th>Descripcion</th>
+                    <th>Factura</th>
+                    <th>Código</th>
+                    <th>Descripción</th>
                     <th>Proveedor</th>
+                    <th>Bodega(s)</th>
                     <th>Stock</th>
                     <th>Precio</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
+                <?php if (count($catalogoProductos) === 0): ?>
+                    <tr>
+                        <td colspan="7">Aun no hay productos registrados.</td>
+                    </tr>
+                <?php endif; ?>
+
                 <?php foreach ($catalogoProductos as $producto): ?>
                     <tr>
+                        <td><?= htmlspecialchars($producto['factura'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['descripcion'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['proveedor'], ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($producto['bodegas'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['stock'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['precio'], ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><span class="estado <?= htmlspecialchars($producto['tipoEstado'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($producto['estado'], ENT_QUOTES, 'UTF-8') ?></span></td>
-                        <td>Editar | Eliminar</td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
-</article>
 
-<div class="paneles">
-    <article class="tarjeta bloque">
-        <h3 class="subtitulo">Formulario rapido</h3>
-        <form class="formulario-grid">
-            <div class="campo">
-                <label for="producto-codigo">Codigo</label>
-                <input id="producto-codigo" type="text" value="<?= htmlspecialchars($formularioProducto['codigo'], ENT_QUOTES, 'UTF-8') ?>">
-            </div>
-            <div class="campo campo-amplio">
-                <label for="producto-descripcion">Descripcion</label>
-                <input id="producto-descripcion" type="text" value="<?= htmlspecialchars($formularioProducto['descripcion'], ENT_QUOTES, 'UTF-8') ?>">
-            </div>
-            <div class="campo">
-                <label for="producto-proveedor">Proveedor</label>
-                <select id="producto-proveedor">
-                    <?php foreach ($formularioProducto['proveedores'] as $proveedor): ?>
-                        <option><?= htmlspecialchars($proveedor, ENT_QUOTES, 'UTF-8') ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="campo">
-                <label for="producto-stock">Stock</label>
-                <input id="producto-stock" type="number" value="<?= htmlspecialchars($formularioProducto['stock'], ENT_QUOTES, 'UTF-8') ?>" min="0">
-            </div>
-            <div class="campo">
-                <label for="producto-precio">Precio</label>
-                <input id="producto-precio" type="number" value="<?= htmlspecialchars($formularioProducto['precio'], ENT_QUOTES, 'UTF-8') ?>" min="0" step="0.01">
-            </div>
-            <div class="fila-acciones campo-amplio">
-                <button type="button" class="boton-principal">Guardar</button>
-                <button type="button" class="boton-fantasma">Cancelar</button>
-            </div>
+    <div class="paginacion-contenedor">
+        <form method="get" class="paginacion-form">
+            <input type="hidden" name="modulo" value="productos">
+            <input type="hidden" name="pagina" value="1">
+            <label for="productos-por-pagina">Registros por pagina</label>
+            <select id="productos-por-pagina" name="por_pagina" onchange="this.form.submit()">
+                <?php foreach ($paginacion['opcionesPorPagina'] as $opcion): ?>
+                    <option value="<?= htmlspecialchars((string) $opcion, ENT_QUOTES, 'UTF-8') ?>" <?= (int) $paginacion['porPagina'] === (int) $opcion ? 'selected' : '' ?>>
+                        <?= htmlspecialchars((string) $opcion, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <span class="paginacion-resumen">
+                <?= htmlspecialchars((string) $paginacion['totalRegistros'], ENT_QUOTES, 'UTF-8') ?> registros
+            </span>
         </form>
-    </article>
 
-    <article class="tarjeta bloque">
-        <h3 class="subtitulo">Control visual</h3>
-        <ul class="lista-simple">
-            <?php foreach ($controlVisual as $itemControl): ?>
-                <li>
-                    <div>
-                        <strong><?= htmlspecialchars($itemControl['titulo'], ENT_QUOTES, 'UTF-8') ?></strong>
-                        <span><?= htmlspecialchars($itemControl['detalle'], ENT_QUOTES, 'UTF-8') ?></span>
-                    </div>
-                    <span class="estado <?= htmlspecialchars($itemControl['tipoEstado'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($itemControl['estado'], ENT_QUOTES, 'UTF-8') ?></span>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    </article>
-</div>
+        <?php if ((int) $paginacion['totalPaginas'] > 1): ?>
+            <div class="paginacion-botones">
+                <?php
+                $paginaActual = (int) $paginacion['paginaActual'];
+                $totalPaginas = (int) $paginacion['totalPaginas'];
+                $porPaginaActual = (int) $paginacion['porPagina'];
+                ?>
+                <a class="boton-fantasma <?= $paginaActual <= 1 ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'productos', 'pagina' => max(1, $paginaActual - 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Anterior</a>
+                <span class="paginacion-texto">Pagina <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
+                <a class="boton-fantasma <?= $paginaActual >= $totalPaginas ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'productos', 'pagina' => min($totalPaginas, $paginaActual + 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Siguiente</a>
+            </div>
+        <?php endif; ?>
+    </div>
+</article>

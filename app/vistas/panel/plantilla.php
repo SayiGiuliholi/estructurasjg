@@ -32,6 +32,10 @@ $nombreUsuario = $datosPlantilla['nombreUsuario'];
 $usuarioAcceso = $datosPlantilla['usuarioAcceso'];
 $nombreRol = $datosPlantilla['nombreRol'];
 $urlHojaEstilosPanel = construirUrlPublica('css/panel/plantilla.css');
+$rutaFisicaHojaEstilosPanel = __DIR__ . '/../../../public/css/panel/plantilla.css';
+$versionHojaEstilosPanel = is_file($rutaFisicaHojaEstilosPanel)
+    ? (string) filemtime($rutaFisicaHojaEstilosPanel)
+    : (string) time();
 $urlPanel = construirUrlPublica('panel.php');
 $urlConfiguracion = construirUrlPublica('panel.php?modulo=configuracion');
 $urlSalir = construirUrlPublica('salir.php');
@@ -42,7 +46,10 @@ $urlSalir = construirUrlPublica('salir.php');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($tituloPagina, ENT_QUOTES, 'UTF-8') ?> | Estructuras JG</title>
-    <link rel="stylesheet" href="<?= htmlspecialchars($urlHojaEstilosPanel, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= htmlspecialchars($urlHojaEstilosPanel . '?v=' . $versionHojaEstilosPanel, ENT_QUOTES, 'UTF-8') ?>">
 </head>
 <body>
     <div class="distribucion">

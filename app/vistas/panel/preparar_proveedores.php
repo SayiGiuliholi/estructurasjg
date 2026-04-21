@@ -2,69 +2,85 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../modelos/Proveedor.php';
+
 /**
- * Prepara los datos visibles del modulo de proveedores para mantener
- * la vista enfocada en la estructura HTML.
+ * Prepara datos del modulo de proveedores con informacion real.
  */
-function prepararDatosModuloProveedores(): array
+function prepararDatosModuloProveedores(array $contexto = []): array
 {
+    /** @var Proveedor[] $proveedores */
+    $proveedores = $contexto['proveedores'] ?? [];
+    $totalConProductos = (int) ($contexto['totalConProductos'] ?? 0);
+
+    $fichaProveedor = $contexto['fichaProveedor'] ?? [
+        'id_proveedor' => '',
+        'ruc' => '',
+        'nombre' => '',
+        'telefono' => '',
+        'direccion' => '',
+    ];
+
+    $idProveedorEdicion = $contexto['idProveedorEdicion'] ?? null;
+    $mensajeExito = trim((string) ($contexto['mensajeExito'] ?? ''));
+    $mensajeError = trim((string) ($contexto['mensajeError'] ?? ''));
+
+    $directorioProveedores = array_map(
+        static function (Proveedor $proveedor): array {
+            $activo = $proveedor->totalProductos > 0;
+
+            return [
+                'id_proveedor' => $proveedor->idProveedor,
+                'ruc' => $proveedor->ruc,
+                'nombre' => $proveedor->nombre,
+                'telefono' => $proveedor->telefono,
+                'direccion' => $proveedor->direccion,
+                'estado' => $activo ? 'Activo' : 'Sin productos',
+                'tipoEstado' => $activo ? 'ok' : 'alerta',
+            ];
+        },
+        $proveedores
+    );
+
+    $totalProveedores = count($proveedores);
+    $totalContactables = 0;
+
+    foreach ($proveedores as $proveedor) {
+        if (trim($proveedor->telefono) !== '' && trim($proveedor->direccion) !== '') {
+            $totalContactables++;
+        }
+    }
+
     return [
         'tituloPagina' => 'Proveedores',
         'tituloSeccion' => 'Gestion de proveedores',
         'descripcionSeccion' => 'Administra proveedores desde una vista exclusiva con formulario, tabla de consulta y acciones listas para un flujo CRUD.',
         'moduloActivo' => 'proveedores',
         'resaltarConfiguracion' => false,
-        'fichaProveedor' => [
-            'ruc' => '900123456-7',
-            'nombre' => 'Acero Nacional SAS',
-            'telefono' => '+57 300 555 1122',
-            'direccion' => 'Zona industrial, calle 18 # 24-35',
-        ],
+        'fichaProveedor' => $fichaProveedor,
+        'idProveedorEdicion' => $idProveedorEdicion,
+        'mensajeExito' => $mensajeExito,
+        'mensajeError' => $mensajeError,
         'indicadores' => [
             [
                 'titulo' => 'Proveedores registrados',
                 'detalle' => 'Base de abastecimiento activa del sistema.',
-                'valor' => '24',
+                'valor' => (string) $totalProveedores,
                 'tipo' => 'valor',
             ],
             [
                 'titulo' => 'Contactables',
                 'detalle' => 'Con telefono y direccion completos.',
-                'valor' => '20',
+                'valor' => (string) $totalContactables,
                 'tipo' => 'estado-ok',
             ],
             [
-                'titulo' => 'Con movimientos recientes',
-                'detalle' => 'Usados en compras durante la ultima semana.',
-                'valor' => '7',
+                'titulo' => 'Con productos asociados',
+                'detalle' => 'Proveedores que ya tienen productos registrados.',
+                'valor' => (string) $totalConProductos,
                 'tipo' => 'estado-alerta',
             ],
         ],
-        'directorioProveedores' => [
-            [
-                'ruc' => '900123456-7',
-                'nombre' => 'Acero Nacional SAS',
-                'telefono' => '+57 300 555 1122',
-                'direccion' => 'Zona industrial, calle 18 # 24-35',
-                'estado' => 'Activo',
-                'tipoEstado' => 'ok',
-            ],
-            [
-                'ruc' => '901778320-1',
-                'nombre' => 'Materiales JG',
-                'telefono' => '+57 301 444 8831',
-                'direccion' => 'Avenida central # 45-90',
-                'estado' => 'Activo',
-                'tipoEstado' => 'ok',
-            ],
-            [
-                'ruc' => '890771235-9',
-                'nombre' => 'Ferreteria Industrial Norte',
-                'telefono' => '+57 304 778 0011',
-                'direccion' => 'Carrera 12 # 9-88',
-                'estado' => 'Pendiente',
-                'tipoEstado' => 'alerta',
-            ],
-        ],
+        'directorioProveedores' => $directorioProveedores,
     ];
 }
