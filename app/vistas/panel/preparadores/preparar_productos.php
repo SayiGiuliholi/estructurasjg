@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../modelos/Producto.php';
+require_once __DIR__ . '/../../../modelos/Producto.php';
 
 /**
  * Prepara datos del modulo de productos en modo consulta.

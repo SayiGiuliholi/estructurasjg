@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../modelos/Proveedor.php';
+require_once __DIR__ . '/../../../modelos/Proveedor.php';
 
 /**
  * Prepara los datos del modulo de entradas con informacion real de base de datos.

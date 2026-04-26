@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_configuracion.php';
-require_once __DIR__ . '/../../modelos/RepositorioUsuario.php';
+require_once __DIR__ . '/../preparadores/preparar_configuracion.php';
+require_once __DIR__ . '/../../../modelos/RepositorioUsuario.php';
 
 $repositorioUsuario = new RepositorioUsuario();
 
@@ -160,7 +160,7 @@ $mensajeExito = $datosModulo['mensajeExito'];
 $mensajeError = $datosModulo['mensajeError'];
 
 ob_start();
-require __DIR__ . '/parciales/configuracion/contenido.php';
+require __DIR__ . '/../modulos/vista_configuracion.php';
 $contenidoModulo = ob_get_clean();
 
 require __DIR__ . '/plantilla.php';

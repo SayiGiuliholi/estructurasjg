@@ -18,8 +18,15 @@ $ultimoUsuario = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ultimoUsuario = trim($_POST['usuario'] ?? '');
 
-    $controlador = new ControladorAutenticacion();
-    $resultado = $controlador->iniciarSesion($_POST);
+    try {
+        $controlador = new ControladorAutenticacion();
+        $resultado = $controlador->iniciarSesion($_POST);
+    } catch (Throwable $error) {
+        $resultado = [
+            'exito' => false,
+            'mensaje' => 'No hay conexion con la base de datos en este momento. Intenta nuevamente en unos minutos.',
+        ];
+    }
 
     if ($resultado['exito'] === true) {
         redirigirA('panel.php');
@@ -28,4 +35,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mensajeError = $resultado['mensaje'];
 }
 
-require_once __DIR__ . '/../app/vistas/autenticacion/login.php';
+require_once __DIR__ . '/../app/vistas/autenticacion/pantallas/login.php';

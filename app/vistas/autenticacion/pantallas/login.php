@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/preparar_login.php';
-require_once __DIR__ . '/../../configuracion/rutas.php';
+require_once __DIR__ . '/../../../configuracion/rutas.php';
 
 $datosVista = prepararDatosVistaLogin(
     [
@@ -19,7 +19,7 @@ $ultimoUsuario = $datosVista['ultimoUsuario'];
 $tituloPagina = $datosVista['tituloPagina'];
 $accionFormulario = $datosVista['accionFormulario'];
 $urlLogoMarca = construirUrlPublica('imagenes/marca/logo-login-principal.png');
-$rutaArchivoCssLogin = __DIR__ . '/../../../public/css/autenticacion/login.css';
+$rutaArchivoCssLogin = __DIR__ . '/../../../../public/css/autenticacion/login.css';
 $versionCssLogin = is_file($rutaArchivoCssLogin) ? (string) filemtime($rutaArchivoCssLogin) : '1';
 $urlCssLogin = construirUrlPublica('css/autenticacion/login.css') . '?v=' . rawurlencode($versionCssLogin);
 ?>
@@ -33,8 +33,8 @@ $urlCssLogin = construirUrlPublica('css/autenticacion/login.css') . '?v=' . rawu
 </head>
 <body>
     <main class="contenedor-login">
-        <?php require __DIR__ . '/parciales/panel_marca.php'; ?>
-        <?php require __DIR__ . '/parciales/formulario_login.php'; ?>
+        <?php require __DIR__ . '/../bloques_login/marca_login.php'; ?>
+        <?php require __DIR__ . '/../bloques_login/form_login.php'; ?>
     </main>
 </body>
 </html>

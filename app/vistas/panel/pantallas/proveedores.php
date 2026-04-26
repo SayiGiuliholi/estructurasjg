@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_proveedores.php';
-require_once __DIR__ . '/../../modelos/RepositorioProveedor.php';
+require_once __DIR__ . '/../preparadores/preparar_proveedores.php';
+require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
 
 $repositorioProveedor = new RepositorioProveedor();
 
@@ -123,7 +123,7 @@ $indicadores = $datosModulo['indicadores'];
 $directorioProveedores = $datosModulo['directorioProveedores'];
 
 ob_start();
-require __DIR__ . '/parciales/proveedores/contenido.php';
+require __DIR__ . '/../modulos/vista_proveedores.php';
 $contenidoModulo = ob_get_clean();
 
 require __DIR__ . '/plantilla.php';

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_entradas.php';
-require_once __DIR__ . '/../../configuracion/rutas.php';
-require_once __DIR__ . '/../../modelos/RepositorioEntrada.php';
-require_once __DIR__ . '/../../modelos/RepositorioProveedor.php';
-require_once __DIR__ . '/../../modelos/RepositorioBodega.php';
+require_once __DIR__ . '/../preparadores/preparar_entradas.php';
+require_once __DIR__ . '/../../../configuracion/rutas.php';
+require_once __DIR__ . '/../../../modelos/RepositorioEntrada.php';
+require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
+require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
 
 $repositorioEntrada = new RepositorioEntrada();
 $repositorioProveedor = new RepositorioProveedor();
@@ -219,7 +219,7 @@ $paginacion = $datosModulo['paginacion'];
 $urlScriptEntradas = construirUrlPublica('js/panel/entradas.js');
 
 ob_start();
-require __DIR__ . '/parciales/entradas/contenido.php';
+require __DIR__ . '/../modulos/vista_entradas.php';
 $contenidoModulo = ob_get_clean();
 
 ob_start();

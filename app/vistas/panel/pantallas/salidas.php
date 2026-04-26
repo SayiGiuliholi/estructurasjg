@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_salidas.php';
-require_once __DIR__ . '/../../configuracion/rutas.php';
-require_once __DIR__ . '/../../modelos/RepositorioSalida.php';
-require_once __DIR__ . '/../../modelos/RepositorioBodega.php';
+require_once __DIR__ . '/../preparadores/preparar_salidas.php';
+require_once __DIR__ . '/../../../configuracion/rutas.php';
+require_once __DIR__ . '/../../../modelos/RepositorioSalida.php';
+require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
 
 $repositorioSalida = new RepositorioSalida();
 $repositorioBodega = new RepositorioBodega();
@@ -212,10 +212,10 @@ $mensajeExito = $datosModulo['mensajeExito'];
 $mensajeError = $datosModulo['mensajeError'];
 $paginacion = $datosModulo['paginacion'];
 $urlScriptSalidas = construirUrlPublica('js/panel/salidas.js');
-$urlApiProductoSalida = construirUrlPublica('api_producto_salida.php');
+$urlApiProductoSalida = construirUrlPublica('api/salidas/producto.php');
 
 ob_start();
-require __DIR__ . '/parciales/salidas/contenido.php';
+require __DIR__ . '/../modulos/vista_salidas.php';
 $contenidoModulo = ob_get_clean();
 
 ob_start();

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_productos.php';
-require_once __DIR__ . '/../../modelos/RepositorioProducto.php';
+require_once __DIR__ . '/../preparadores/preparar_productos.php';
+require_once __DIR__ . '/../../../modelos/RepositorioProducto.php';
 
 $repositorioProducto = new RepositorioProducto();
 
@@ -50,7 +50,7 @@ $controlVisual = $datosModulo['controlVisual'];
 $paginacion = $datosModulo['paginacion'];
 
 ob_start();
-require __DIR__ . '/parciales/productos/contenido.php';
+require __DIR__ . '/../modulos/vista_productos.php';
 $contenidoModulo = ob_get_clean();
 
 require __DIR__ . '/plantilla.php';

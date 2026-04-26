@@ -68,6 +68,6 @@ final class ControladorPanel
             redirigirA('panel.php?modulo=' . urlencode($moduloSeguro));
         }
 
-        return __DIR__ . '/../vistas/panel/' . $modulos[$moduloSolicitado];
+        return __DIR__ . '/../vistas/panel/pantallas/' . $modulos[$moduloSolicitado];
     }
 }

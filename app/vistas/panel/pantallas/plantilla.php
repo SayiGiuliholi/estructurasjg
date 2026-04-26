@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/preparar_plantilla.php';
-require_once __DIR__ . '/../../configuracion/rutas.php';
+require_once __DIR__ . '/../preparadores/preparar_plantilla.php';
+require_once __DIR__ . '/../../../configuracion/rutas.php';
 
 $datosPlantilla = prepararDatosPlantillaPanel(
     $autenticacion ?? [],
@@ -32,7 +32,7 @@ $nombreUsuario = $datosPlantilla['nombreUsuario'];
 $usuarioAcceso = $datosPlantilla['usuarioAcceso'];
 $nombreRol = $datosPlantilla['nombreRol'];
 $urlHojaEstilosPanel = construirUrlPublica('css/panel/plantilla.css');
-$rutaFisicaHojaEstilosPanel = __DIR__ . '/../../../public/css/panel/plantilla.css';
+$rutaFisicaHojaEstilosPanel = __DIR__ . '/../../../../public/css/panel/plantilla.css';
 $versionHojaEstilosPanel = is_file($rutaFisicaHojaEstilosPanel)
     ? (string) filemtime($rutaFisicaHojaEstilosPanel)
     : (string) time();
@@ -53,10 +53,10 @@ $urlSalir = construirUrlPublica('salir.php');
 </head>
 <body>
     <div class="distribucion">
-        <?php require __DIR__ . '/parciales/barra_lateral.php'; ?>
+        <?php require __DIR__ . '/../layout_panel/sidebar_panel.php'; ?>
 
         <main class="contenido">
-            <?php require __DIR__ . '/parciales/barra_superior.php'; ?>
+            <?php require __DIR__ . '/../layout_panel/topbar_panel.php'; ?>
 
             <section class="hero">
                 <h2><?= htmlspecialchars($tituloSeccion, ENT_QUOTES, 'UTF-8') ?></h2>

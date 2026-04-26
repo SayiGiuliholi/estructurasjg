@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../app/filtros/autenticado.php';
-require_once __DIR__ . '/../app/modelos/RepositorioSalida.php';
+require_once __DIR__ . '/../../../app/filtros/autenticado.php';
+require_once __DIR__ . '/../../../app/modelos/RepositorioSalida.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
