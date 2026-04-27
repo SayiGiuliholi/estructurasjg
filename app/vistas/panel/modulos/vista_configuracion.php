@@ -82,7 +82,7 @@ declare(strict_types=1);
                 <button type="submit" class="boton-principal">
                     <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Actualizar usuario' : 'Crear usuario' ?>
                 </button>
-                <a href="?modulo=configuracion" class="boton-fantasma">Limpiar</a>
+                <button type="reset" class="boton-fantasma">Limpiar</button>
             </div>
         </form>
     </article>

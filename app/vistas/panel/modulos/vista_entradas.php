@@ -10,7 +10,7 @@
 <article class="tarjeta bloque formulario-flujo">
     <div class="cabecera-modulo">
         <div>
-            <h3 class="subtitulo">Registra el producto</h3>
+            <h3 class="subtitulo">Nueva entrada</h3>
         </div>
     </div>
 
@@ -28,8 +28,8 @@
         <section class="tarjeta flujo-bloque">
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
-                    <h3 class="subtitulo">Datos de compra del producto</h3>
-                    <p>Completa la cabecera de la factura antes de agregar productos.</p>
+                    <h3 class="subtitulo">Información de la compra</h3>
+                    <p>Ingresa los datos generales de la factura.</p>
                 </div>
             </div>
 
@@ -85,8 +85,8 @@
         <section class="tarjeta flujo-bloque">
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
-                    <h3 class="subtitulo">Registra los datos del producto</h3>
-                    <p>Registra los items de la compra y controla su total por linea.</p>
+                    <h3 class="subtitulo">Registra la información del producto</h3>
+                    <p>Agrega los productos incluidos en la compra.</p>
                 </div>
             </div>
 
@@ -94,12 +94,12 @@
                 <table class="tabla" id="tabla-detalles-entrada">
                     <thead>
                         <tr>
-                            <th>Codigo</th>
+                            <th>Código</th>
                             <th>Descripcion</th>
                             <th>Cantidad</th>
                             <th>Costo unitario</th>
-                            <th>Total linea</th>
-                            <th>Acciones</th>
+                            <th>Total</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody id="entrada-detalles-body">
@@ -115,7 +115,7 @@
                                     <input type="number" min="1" name="cantidad_producto[]" class="js-cantidad" value="<?= htmlspecialchars($detalle['cantidad'], ENT_QUOTES, 'UTF-8') ?>" required>
                                 </td>
                                 <td>
-                                    <input type="number" min="0" step="0.01" name="precio_producto[]" class="js-precio" value="<?= htmlspecialchars($detalle['precio'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                    <input type="text" inputmode="numeric" name="precio_producto[]" class="js-precio" value="<?= htmlspecialchars($detalle['precio'], ENT_QUOTES, 'UTF-8') ?>" required>
                                 </td>
                                 <td>
                                     <input type="text" class="js-total-linea" readonly>
@@ -130,27 +130,26 @@
             </div>
 
             <div class="fila-acciones">
-                <button type="button" class="boton-secundario" id="entrada-agregar-linea">Agregar producto</button>
+                <button type="button" class="boton-secundario" id="entrada-agregar-linea">Añadir producto</button>
             </div>
         </section>
 
         <section class="tarjeta flujo-bloque">
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
-                    <h3 class="subtitulo">Resumen</h3>
-                    <p>Verifica el total y finaliza el registro de la entrada.</p>
+                    <h3 class="subtitulo">Resumen de la compra</h3>
+                    <p>Revisa la información antes de guardar.</p>
                 </div>
             </div>
 
             <div class="campo campo-total-factura campo-total-factura-compacta">
-                <label for="entrada-total-factura">Total factura</label>
+                <label for="entrada-total-factura">Total de la compra</label>
                 <input id="entrada-total-factura" type="text" value="<?= htmlspecialchars($formularioEntrada['total_factura'], ENT_QUOTES, 'UTF-8') ?>" readonly>
-                <span class="ayuda-campo">Se calcula automaticamente sumando todas las lineas.</span>
             </div>
 
             <div class="fila-acciones">
-                <button type="submit" class="boton-principal">Guardar entrada</button>
-                <a href="?modulo=entradas" class="boton-fantasma">Limpiar formulario</a>
+                <button type="submit" class="boton-principal">Registrar entrada</button>
+                <button type="reset" class="boton-fantasma">Cancelar</button>
             </div>
         </section>
     </form>
@@ -159,13 +158,48 @@
 <article class="tarjeta tarjeta-tabla">
     <div class="cabecera-modulo" style="padding: 22px 22px 0;">
         <div>
-            <h3 class="subtitulo">Historial de entradas</h3>
-            <p>Registros reales de compras guardadas en base de datos.</p>
+            <h3 class="subtitulo">Historial de compras</h3>
+          
         </div>
     </div>
 
+    <?php
+    $proveedoresHistorial = [];
+    foreach ($historialEntradas as $entradaHistorial) {
+        $nombreProveedor = trim((string) ($entradaHistorial['proveedor'] ?? ''));
+        if ($nombreProveedor !== '') {
+            $proveedoresHistorial[$nombreProveedor] = $nombreProveedor;
+        }
+    }
+    ksort($proveedoresHistorial);
+    ?>
+
+    <form class="historial-filtros" id="entrada-filtros-form" onsubmit="return false;">
+        <div class="campo campo-busqueda">
+            <label for="entrada-filtro-buscar">Buscar compra</label>
+            <input id="entrada-filtro-buscar" type="text" placeholder="Buscar factura, codigo o producto...">
+        </div>
+
+        <div class="campo">
+            <label for="entrada-filtro-proveedor">Proveedor</label>
+            <select id="entrada-filtro-proveedor">
+                <option value="">Todos</option>
+                <?php foreach ($proveedoresHistorial as $proveedorHistorial): ?>
+                    <option value="<?= htmlspecialchars($proveedorHistorial, ENT_QUOTES, 'UTF-8') ?>">
+                        <?= htmlspecialchars($proveedorHistorial, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="entrada-filtro-fecha">Fecha</label>
+            <input id="entrada-filtro-fecha" type="date">
+        </div>
+    </form>
+
     <div class="tabla-contenedor">
-        <table class="tabla tabla-historial-entradas">
+        <table class="tabla tabla-historial-entradas" id="tabla-historial-entradas">
             <thead>
                 <tr>
                     <th>Compra</th>
@@ -187,7 +221,11 @@
                 <?php endif; ?>
 
                 <?php foreach ($historialEntradas as $entrada): ?>
-                    <tr>
+                    <tr
+                        class="js-historial-entrada"
+                        data-proveedor="<?= htmlspecialchars(strtolower((string) $entrada['proveedor']), ENT_QUOTES, 'UTF-8') ?>"
+                        data-fecha="<?= htmlspecialchars((string) ($entrada['fecha_registro'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    >
                         <td><?= htmlspecialchars($entrada['codigo_compra'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($entrada['codigo_producto'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($entrada['descripcion'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -204,6 +242,9 @@
                         </td>
                     </tr>
                 <?php endforeach; ?>
+                <tr id="entrada-historial-vacio" hidden>
+                    <td colspan="9">No hay resultados con los filtros aplicados.</td>
+                </tr>
             </tbody>
         </table>
     </div>

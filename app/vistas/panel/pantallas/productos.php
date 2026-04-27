@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../preparadores/preparar_productos.php';
+require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProducto.php';
 
 $repositorioProducto = new RepositorioProducto();
@@ -48,9 +49,16 @@ $resumenIndicadores = $datosModulo['resumenIndicadores'];
 $catalogoProductos = $datosModulo['catalogoProductos'];
 $controlVisual = $datosModulo['controlVisual'];
 $paginacion = $datosModulo['paginacion'];
+$urlScriptProductos = construirUrlPublica('js/panel/productos.js');
 
 ob_start();
 require __DIR__ . '/../modulos/vista_productos.php';
 $contenidoModulo = ob_get_clean();
+
+ob_start();
+?>
+<script src="<?= htmlspecialchars($urlScriptProductos, ENT_QUOTES, 'UTF-8') ?>"></script>
+<?php
+$scriptsModulo = ob_get_clean();
 
 require __DIR__ . '/plantilla.php';

@@ -10,18 +10,53 @@
 <article class="tarjeta bloque">
     <div class="cabecera-modulo">
         <div>
-            <h3 class="subtitulo">Catalogo de productos</h3>
-            <p>Vista de consulta en tiempo real del inventario registrado por movimientos.</p>
+            <h3 class="subtitulo">Listado de productos</h3>
+            <p>Consulta y gestiona el inventario disponible.</p>
         </div>
     </div>
 
+    <?php
+    $proveedoresCatalogo = [];
+    foreach ($catalogoProductos as $productoCatalogo) {
+        $nombreProveedor = trim((string) ($productoCatalogo['proveedor'] ?? ''));
+        if ($nombreProveedor !== '') {
+            $proveedoresCatalogo[$nombreProveedor] = $nombreProveedor;
+        }
+    }
+    ksort($proveedoresCatalogo);
+    ?>
+
+    <form class="historial-filtros" id="productos-filtros-form" onsubmit="return false;">
+        <div class="campo campo-busqueda">
+            <label for="productos-filtro-buscar">Buscar producto</label>
+            <input id="productos-filtro-buscar" type="text" placeholder="Buscar codigo, producto o factura...">
+        </div>
+
+        <div class="campo">
+            <label for="productos-filtro-proveedor">Proveedor</label>
+            <select id="productos-filtro-proveedor">
+                <option value="">Todos</option>
+                <?php foreach ($proveedoresCatalogo as $proveedorCatalogo): ?>
+                    <option value="<?= htmlspecialchars($proveedorCatalogo, ENT_QUOTES, 'UTF-8') ?>">
+                        <?= htmlspecialchars($proveedorCatalogo, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="productos-filtro-fecha">Fecha</label>
+            <input id="productos-filtro-fecha" type="date">
+        </div>
+    </form>
+
     <div class="tabla-contenedor">
-        <table class="tabla tabla-historial-productos">
+        <table class="tabla tabla-historial-productos" id="tabla-historial-productos">
             <thead>
                 <tr>
-                    <th>Factura</th>
+                 
                     <th>Código</th>
-                    <th>Descripción</th>
+                    <th>Producto</th>
                     <th>Proveedor</th>
                     <th>Bodega(s)</th>
                     <th>Stock</th>
@@ -36,8 +71,13 @@
                 <?php endif; ?>
 
                 <?php foreach ($catalogoProductos as $producto): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($producto['factura'], ENT_QUOTES, 'UTF-8') ?></td>
+                    <tr
+                        class="js-historial-producto"
+                        data-busqueda="<?= htmlspecialchars((string) ($producto['factura'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                        data-proveedor="<?= htmlspecialchars(strtolower((string) $producto['proveedor']), ENT_QUOTES, 'UTF-8') ?>"
+                        data-fecha="<?= htmlspecialchars((string) ($producto['fecha_registro'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                        
                         <td><?= htmlspecialchars($producto['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['descripcion'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($producto['proveedor'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -46,6 +86,9 @@
                         <td><?= htmlspecialchars($producto['precio'], ENT_QUOTES, 'UTF-8') ?></td>
                     </tr>
                 <?php endforeach; ?>
+                <tr id="productos-historial-vacio" hidden>
+                    <td colspan="6">No hay resultados con los filtros aplicados.</td>
+                </tr>
             </tbody>
         </table>
     </div>

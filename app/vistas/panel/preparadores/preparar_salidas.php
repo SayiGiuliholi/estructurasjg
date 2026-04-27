@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 function prepararDatosModuloSalidas(array $contexto = []): array
 {
-    $formatearMoneda = static fn(float $valor): string => '$ ' . number_format($valor, 0, ',', '.');
+    $formatearMoneda = static fn(float $valor): string => '$' . number_format($valor, 0, ',', '.');
     $parsearMoneda = static function (string $valor): float {
         $limpio = preg_replace('/[^\d\-]/', '', $valor) ?? '';
         if ($limpio === '' || $limpio === '-') {
@@ -59,7 +59,7 @@ function prepararDatosModuloSalidas(array $contexto = []): array
             'descripcion' => (string) ($detalle['descripcion'] ?? ''),
             'stock' => (string) max(0, (int) ($detalle['stock'] ?? 0)),
             'cantidad' => (string) max(0, (int) ($detalle['cantidad'] ?? 0)),
-            'precio' => number_format(max(0, (float) ($detalle['precio'] ?? 0)), 0, ',', '.'),
+            'precio' => '$' . number_format(max(0, (float) ($detalle['precio'] ?? 0)), 0, ',', '.'),
         ],
         $detallesFormulario
     );
@@ -79,7 +79,7 @@ function prepararDatosModuloSalidas(array $contexto = []): array
     );
 
     $resumenIndicadores = [
-        ['etiqueta' => 'Ventas de hoy', 'valor' => (string) ((int) ($resumen['ventas_hoy'] ?? 0))],
+        ['etiqueta' => 'Salidas registradas hoy', 'valor' => (string) ((int) ($resumen['ventas_hoy'] ?? 0))],
         ['etiqueta' => 'Unidades despachadas', 'valor' => number_format((int) ($resumen['unidades_hoy'] ?? 0), 0, '.', ',')],
     ];
 
@@ -115,8 +115,8 @@ function prepararDatosModuloSalidas(array $contexto = []): array
 
     return [
         'tituloPagina' => 'Salidas',
-        'tituloSeccion' => 'Gestion de salidas',
-        'descripcionSeccion' => 'Registra facturas de salida con multiples productos y descuenta stock por bodega automaticamente.',
+        'tituloSeccion' => 'Registrar salida de inventario',
+        'descripcionSeccion' => 'Registra ventas o salidas de productos y actualiza el stock automáticamente.',
         'moduloActivo' => 'salidas',
         'resaltarConfiguracion' => false,
         'resumenIndicadores' => $resumenIndicadores,

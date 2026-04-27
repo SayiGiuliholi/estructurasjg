@@ -53,8 +53,8 @@ function prepararDatosModuloProveedores(array $contexto = []): array
 
     return [
         'tituloPagina' => 'Proveedores',
-        'tituloSeccion' => 'Gestion de proveedores',
-        'descripcionSeccion' => 'Administra proveedores desde una vista exclusiva con formulario, tabla de consulta y acciones listas para un flujo CRUD.',
+        'tituloSeccion' => 'Proveedores',
+        'descripcionSeccion' => 'Gestiona y consulta la información de tus proveedores.',
         'moduloActivo' => 'proveedores',
         'resaltarConfiguracion' => false,
         'fichaProveedor' => $fichaProveedor,

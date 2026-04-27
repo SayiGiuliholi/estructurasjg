@@ -50,6 +50,7 @@ $urlSalir = construirUrlPublica('salir.php');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= htmlspecialchars($urlHojaEstilosPanel . '?v=' . $versionHojaEstilosPanel, ENT_QUOTES, 'UTF-8') ?>">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
     <div class="distribucion">
@@ -68,6 +69,11 @@ $urlSalir = construirUrlPublica('salir.php');
             </section>
         </main>
     </div>
+    <script>
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+            window.lucide.createIcons();
+        }
+    </script>
 </body>
 <?= $scriptsModulo ?>
 </html>

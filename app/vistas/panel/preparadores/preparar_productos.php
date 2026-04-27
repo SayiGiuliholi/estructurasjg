@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../modelos/Producto.php';
  */
 function prepararDatosModuloProductos(array $contexto = []): array
 {
-    $formatearMoneda = static fn(float $valor): string => '$ ' . number_format($valor, 0, ',', '.');
+    $formatearMoneda = static fn(float $valor): string => '$' . number_format($valor, 0, ',', '.');
     /** @var Producto[] $productos */
     $productos = $contexto['catalogoProductos'] ?? [];
     $paginacion = $contexto['paginacion'] ?? [
@@ -22,12 +22,16 @@ function prepararDatosModuloProductos(array $contexto = []): array
 
     $catalogoProductos = array_map(
         static function (Producto $producto) use ($formatearMoneda): array {
+            $marcaTiempo = $producto->fecha !== null ? strtotime($producto->fecha) : false;
+            $fechaRegistro = $marcaTiempo !== false ? date('d/m/Y', $marcaTiempo) : '';
+
             return [
                 'id_producto' => $producto->idProducto,
                 'factura' => trim($producto->ultimaFactura) !== '' ? $producto->ultimaFactura : 'Sin factura',
                 'codigo' => $producto->codigo,
                 'descripcion' => $producto->descripcion,
                 'proveedor' => $producto->nombreProveedor,
+                'fecha_registro' => $fechaRegistro,
                 'bodegas' => trim($producto->resumenBodegas) !== ''
                     ? (preg_replace('/\s*\(\d+\)/', '', $producto->resumenBodegas) ?: 'Sin bodega')
                     : 'Sin bodega',
@@ -40,27 +44,23 @@ function prepararDatosModuloProductos(array $contexto = []): array
 
     $resumenIndicadores = [
         [
-            'etiqueta' => 'Productos registrados',
-            'valor' => (string) ($contexto['totalProductos'] ?? count($productos)),
-        ],
-        [
-            'etiqueta' => 'Stock total',
+            'etiqueta' => 'Unidades en inventario',
             'valor' => number_format((float) ($contexto['stockTotal'] ?? 0), 0, '.', ','),
         ],
         [
-            'etiqueta' => 'Stock bajo',
+            'etiqueta' => 'Productos con bajo stock',
             'valor' => (string) ($contexto['stockBajo'] ?? 0),
         ],
         [
-            'etiqueta' => 'Valor estimado',
+            'etiqueta' => 'Valor total del inventario',
             'valor' => $formatearMoneda((float) ($contexto['valorEstimado'] ?? 0)),
         ],
     ];
 
     return [
         'tituloPagina' => 'Productos',
-        'tituloSeccion' => 'Consulta de productos',
-        'descripcionSeccion' => 'Este modulo es solo de consulta. El stock se actualiza por movimientos operativos del inventario.',
+        'tituloSeccion' => 'Inventario de productos',
+        'descripcionSeccion' => 'Visualiza el stock actual de tus productos en tiempo real.',
         'moduloActivo' => 'productos',
         'resaltarConfiguracion' => false,
         'resumenIndicadores' => $resumenIndicadores,

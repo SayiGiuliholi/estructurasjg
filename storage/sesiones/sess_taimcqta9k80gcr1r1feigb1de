@@ -1,0 +1,1 @@
+autenticacion|a:6:{s:10:"id_usuario";i:1;s:6:"nombre";s:13:"Administrador";s:7:"usuario";s:5:"admin";s:6:"id_rol";i:1;s:3:"rol";s:13:"Administrador";s:8:"permisos";a:6:{s:19:"registrar_productos";i:1;s:19:"modificar_productos";i:1;s:21:"registrar_movimientos";i:1;s:21:"consultar_movimientos";i:1;s:15:"gestionar_roles";i:1;s:13:"configuracion";i:1;}}

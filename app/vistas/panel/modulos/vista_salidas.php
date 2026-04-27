@@ -10,10 +10,10 @@
 <article class="tarjeta bloque formulario-flujo">
     <div class="cabecera-modulo">
         <div>
-            <h3 class="subtitulo">Datos de la salida</h3>
-            <p>Registra facturas de salida y descuenta stock por bodega.</p>
+            <h3 class="subtitulo">Informacion de la salida</h3>
+            
         </div>
-        <button type="submit" form="form-salidas" class="boton-principal">Guardar salida</button>
+        <button type="submit" form="form-salidas" class="boton-principal">Registrar salida</button>
     </div>
 
     <?php if ($mensajeExito !== ''): ?>
@@ -31,18 +31,18 @@
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
                     <h3 class="subtitulo">Datos de la salida</h3>
-                    <p>Completa la cabecera de la factura antes de cargar productos.</p>
+                    <p>Ingresa los datos de la salida.</p>
                 </div>
             </div>
 
             <div class="formulario-grid formulario-grid-datos">
                 <div class="campo">
-                    <label for="salida-codigo-factura">Factura</label>
+                    <label for="salida-codigo-factura">Número de factura</label>
                     <input
                         id="salida-codigo-factura"
                         name="codigo_factura"
                         type="text"
-                        placeholder="Ej: VTA-2026-001"
+                        placeholder="Ej: FAC-2026-0001"
                         value="<?= htmlspecialchars($formularioSalida['codigo_factura'], ENT_QUOTES, 'UTF-8') ?>"
                     >
                 </div>
@@ -68,7 +68,7 @@
                 </div>
 
                 <div class="campo">
-                    <label for="salida-motivo">Motivo de salida</label>
+                    <label for="salida-motivo">Tipo de salida</label>
                     <select id="salida-motivo" name="motivo_salida" required>
                         <option value="normal" <?= $formularioSalida['motivo_salida'] === 'normal' ? 'selected' : '' ?>>Normal</option>
                         <option value="devolucion" <?= $formularioSalida['motivo_salida'] === 'devolucion' ? 'selected' : '' ?>>Devolucion</option>
@@ -81,23 +81,22 @@
         <section class="tarjeta flujo-bloque">
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
-                    <h3 class="subtitulo">Productos de la factura</h3>
-                    <p>Consulta stock por bodega y valida cantidades por linea.</p>
+                    <h3 class="subtitulo">Productos</h3>
                 </div>
-                <button type="button" class="boton-secundario" id="salida-agregar-linea">Agregar producto</button>
+                <button type="button" class="boton-secundario" id="salida-agregar-linea">Añadir producto</button>
             </div>
 
             <div class="tabla-contenedor">
                 <table class="tabla" id="tabla-detalles-salida">
                     <thead>
                         <tr>
-                            <th>Codigo</th>
-                            <th>Descripcion</th>
+                            <th>Código</th>
+                            <th>Producto</th>
                             <th>Stock bodega</th>
                             <th>Cantidad</th>
                             <th>Precio</th>
-                            <th>Total linea</th>
-                            <th>Acciones</th>
+                            <th>Total</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody id="salida-detalles-body">
@@ -135,42 +134,82 @@
             <div class="cabecera-modulo cabecera-bloque">
                 <div>
                     <h3 class="subtitulo">Resumen</h3>
-                    <p>Confirma el total de la factura antes de registrar la salida.</p>
+                    <p>Resumen de la salida.</p>
                 </div>
             </div>
 
             <div class="campo campo-total-factura">
-                <label for="salida-total-factura">Total factura</label>
+                <label for="salida-total-factura">Total de la salida</label>
                 <input id="salida-total-factura" type="text" value="<?= htmlspecialchars($formularioSalida['total_factura'], ENT_QUOTES, 'UTF-8') ?>" readonly>
                 <span class="ayuda-campo" id="salida-validacion">La factura se valida por stock en cada linea.</span>
             </div>
 
             <div class="fila-acciones">
-                <a href="?modulo=salidas" class="boton-fantasma">Limpiar formulario</a>
+                <button type="reset" class="boton-fantasma">Limpiar formulario</button>
             </div>
         </section>
     </form>
 </article>
 
 <article class="tarjeta tarjeta-tabla">
-    <div class="cabecera-modulo" style="padding: 22px 22px 0;">
+    <div class="cabecera-modulo" style="padding: 22px 22px 14px;">
         <div>
             <h3 class="subtitulo">Historial de salidas</h3>
-            <p>Registros recientes de ventas y despachos, con lectura rapida del stock comprometido.</p>
+            <p>Consulta las salidas registradas en el sistema.</p>
         </div>
     </div>
+
+    <?php
+    $bodegasHistorial = [];
+    foreach ($historialSalidas as $salidaHistorial) {
+        $nombreBodega = trim((string) ($salidaHistorial['bodega'] ?? ''));
+        if ($nombreBodega !== '') {
+            $bodegasHistorial[$nombreBodega] = $nombreBodega;
+        }
+    }
+    ksort($bodegasHistorial);
+    ?>
+
+    <form class="historial-filtros historial-filtros-salidas" id="salidas-filtros-form" onsubmit="return false;">
+        <div class="campo campo-busqueda">
+            <label for="salidas-filtro-buscar">Buscar salida</label>
+            <input id="salidas-filtro-buscar" type="text" placeholder="Buscar factura, codigo o producto...">
+        </div>
+
+        <div class="campo">
+            <label for="salidas-filtro-bodega">Bodega</label>
+            <select id="salidas-filtro-bodega">
+                <option value="">Todas</option>
+                <?php foreach ($bodegasHistorial as $bodegaHistorial): ?>
+                    <option value="<?= htmlspecialchars($bodegaHistorial, ENT_QUOTES, 'UTF-8') ?>">
+                        <?= htmlspecialchars($bodegaHistorial, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="salidas-filtro-fecha">Fecha</label>
+            <input id="salidas-filtro-fecha" type="date">
+        </div>
+
+        <div class="historial-filtros-accion">
+            <button type="submit" class="boton-secundario">Buscar</button>
+        </div>
+    </form>
+
     <div class="tabla-contenedor">
-        <table class="tabla tabla-historial-salidas">
+        <table class="tabla tabla-historial-salidas" id="tabla-historial-salidas">
             <thead>
                 <tr>
                     <th>Factura</th>
-                    <th>Codigo</th>
+                    <th>Código</th>
                     <th>Producto</th>
                     <th>Cantidad</th>
-                    <th>Motivo</th>
+                    <th>Tipo de salida</th>
                     <th>Bodega</th>
                     <th>Total</th>
-                    <th>Fecha y hora</th>
+                    <th>Fecha</th>
                 </tr>
             </thead>
             <tbody>
@@ -181,7 +220,11 @@
                 <?php endif; ?>
 
                 <?php foreach ($historialSalidas as $salida): ?>
-                    <tr>
+                    <tr
+                        class="js-historial-salida"
+                        data-bodega="<?= htmlspecialchars(strtolower((string) $salida['bodega']), ENT_QUOTES, 'UTF-8') ?>"
+                        data-fecha="<?= htmlspecialchars((string) ($salida['fecha_registro'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                    >
                         <td><?= htmlspecialchars($salida['factura'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($salida['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($salida['producto'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -197,6 +240,9 @@
                         </td>
                     </tr>
                 <?php endforeach; ?>
+                <tr id="salidas-historial-vacio" hidden>
+                    <td colspan="8">No hay resultados con los filtros aplicados.</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -213,9 +259,6 @@
                     </option>
                 <?php endforeach; ?>
             </select>
-            <span class="paginacion-resumen">
-                <?= htmlspecialchars((string) $paginacion['totalRegistros'], ENT_QUOTES, 'UTF-8') ?> registros
-            </span>
         </form>
 
         <?php if ((int) $paginacion['totalPaginas'] > 1): ?>

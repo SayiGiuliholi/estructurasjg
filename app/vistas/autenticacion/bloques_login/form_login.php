@@ -1,9 +1,15 @@
 <section class="panel-formulario">
-    <div class="tarjeta-formulario">
+    <div class="tarjeta-formulario card-login">
         <div class="encabezado-formulario">
-            <span class="etiqueta-formulario">Acceso seguro</span>
-            <h2>Bienvenido de nuevo</h2>
-            <p>Ingresa y gestiona tu inventario de manera rápida, segura y eficiente.</p>
+            <div class="logo-login" aria-hidden="true">
+                <img
+                    src="<?= htmlspecialchars($urlLogoMarca, ENT_QUOTES, 'UTF-8') ?>"
+                    alt=""
+                    class="logo-login-imagen"
+                >
+            </div>
+            <h1>Iniciar sesion</h1>
+            <p>Accede a tu sistema de inventario</p>
         </div>
 
         <?php if ($mensajeError !== null): ?>
@@ -15,21 +21,30 @@
         <form action="<?= htmlspecialchars($accionFormulario, ENT_QUOTES, 'UTF-8') ?>" method="POST" autocomplete="off">
             <div class="campo">
                 <label for="usuario">Usuario</label>
-                <span class="ayuda-etiqueta">Nombre de acceso registrado</span>
-                <input type="text" id="usuario" name="usuario" value="<?= htmlspecialchars($ultimoUsuario, ENT_QUOTES, 'UTF-8') ?>" required>
+                <input
+                    type="text"
+                    id="usuario"
+                    name="usuario"
+                    value="<?= htmlspecialchars($ultimoUsuario, ENT_QUOTES, 'UTF-8') ?>"
+                    required
+                >
             </div>
 
             <div class="campo">
                 <label for="contrasena">Contraseña</label>
-                <span class="ayuda-etiqueta">Protegida con validacion segura</span>
-                <input type="password" id="contrasena" name="contrasena" required>
+                <div class="campo-contrasena">
+                    <input type="password" id="contrasena" name="contrasena" required>
+                    <button
+                        type="button"
+                        class="boton-toggle-contrasena"
+                        id="toggle-contrasena"
+                        aria-controls="contrasena"
+                        aria-pressed="false"
+                    >Mostrar</button>
+                </div>
             </div>
 
-            <button type="submit" class="boton-login">Acceder ahora</button>
+            <button type="submit" class="boton-login">Iniciar sesion</button>
         </form>
-
-        <div class="pie-formulario">
-            <p class="texto-ayuda">Ingresa con tu cuenta y empieza a controlar tu inventario en segundos.</p>
-        </div>
     </div>
 </section>

@@ -27,14 +27,14 @@
     }
 
     function formatearMoneda(valor) {
-        return '$ ' + Number(valor || 0).toLocaleString('es-CO', {
+        return '$' + Number(valor || 0).toLocaleString('es-CO', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         });
     }
 
     function formatearNumero(valor) {
-        return Number(valor || 0).toLocaleString('es-CO', {
+        return '$' + Number(valor || 0).toLocaleString('es-CO', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         });
@@ -106,7 +106,7 @@
         totalFactura.value = formatearMoneda(total);
 
         if (hayErrorStock) {
-            setMensaje('Hay lineas donde la cantidad supera el stock de bodega.', 'error');
+            setMensaje('La cantidad supera el stock disponible.', 'error');
             return false;
         }
 
@@ -256,4 +256,86 @@
     });
 
     recalcularFactura();
+})();
+
+(function () {
+    var tablaHistorial = document.getElementById('tabla-historial-salidas');
+    var formularioFiltros = document.getElementById('salidas-filtros-form');
+    var inputBuscar = document.getElementById('salidas-filtro-buscar');
+    var selectBodega = document.getElementById('salidas-filtro-bodega');
+    var inputFecha = document.getElementById('salidas-filtro-fecha');
+    var filaVacia = document.getElementById('salidas-historial-vacio');
+
+    if (!tablaHistorial || !formularioFiltros || !inputBuscar || !selectBodega || !inputFecha) {
+        return;
+    }
+
+    var filasHistorial = Array.prototype.slice.call(
+        tablaHistorial.querySelectorAll('tbody tr.js-historial-salida')
+    );
+
+    function normalizar(texto) {
+        return String(texto || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim();
+    }
+
+    function fechaInputARegistro(fechaInput) {
+        if (!fechaInput || fechaInput.indexOf('-') === -1) {
+            return '';
+        }
+        var partes = fechaInput.split('-');
+        if (partes.length !== 3) {
+            return '';
+        }
+        return partes[2] + '/' + partes[1] + '/' + partes[0];
+    }
+
+    function aplicarFiltros() {
+        var termino = normalizar(inputBuscar.value);
+        var bodega = normalizar(selectBodega.value);
+        var fechaSeleccionada = fechaInputARegistro(String(inputFecha.value || '').trim());
+        var visibles = 0;
+
+        filasHistorial.forEach(function (fila) {
+            var textoFila = normalizar(fila.textContent || '');
+            var bodegaFila = normalizar(fila.getAttribute('data-bodega') || '');
+            var fechaFila = String(fila.getAttribute('data-fecha') || '').trim();
+
+            var coincideTexto = termino === '' || textoFila.indexOf(termino) !== -1;
+            var coincideBodega = bodega === '' || bodegaFila === bodega;
+            var coincideFecha = fechaSeleccionada === '' || fechaFila === fechaSeleccionada;
+            var mostrar = coincideTexto && coincideBodega && coincideFecha;
+
+            fila.hidden = !mostrar;
+            if (mostrar) {
+                visibles++;
+            }
+        });
+
+        if (filaVacia) {
+            filaVacia.hidden = visibles > 0;
+        }
+    }
+
+    inputBuscar.addEventListener('input', aplicarFiltros);
+    selectBodega.addEventListener('change', aplicarFiltros);
+    inputFecha.addEventListener('change', aplicarFiltros);
+    formularioFiltros.addEventListener('submit', function (evento) {
+        evento.preventDefault();
+        aplicarFiltros();
+    });
+
+    [inputBuscar, selectBodega, inputFecha].forEach(function (control) {
+        control.addEventListener('keydown', function (evento) {
+            if (evento.key !== 'Enter') {
+                return;
+            }
+
+            evento.preventDefault();
+            aplicarFiltros();
+        });
+    });
 })();

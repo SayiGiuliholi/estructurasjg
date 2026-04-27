@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../modelos/Proveedor.php';
  */
 function prepararDatosModuloEntradas(array $contexto = []): array
 {
-    $formatearMoneda = static fn(float $valor): string => '$ ' . number_format($valor, 0, ',', '.');
+    $formatearMoneda = static fn(float $valor): string => '$' . number_format($valor, 0, ',', '.');
     $resumen = $contexto['resumen'] ?? [];
     $ultimoMovimiento = $contexto['ultimoMovimiento'] ?? null;
     $historial = $contexto['historialEntradas'] ?? [];
@@ -42,19 +42,19 @@ function prepararDatosModuloEntradas(array $contexto = []): array
 
     $resumenIndicadores = [
         [
-            'etiqueta' => 'Entradas de hoy',
+            'etiqueta' => 'Entradas registradas hoy',
             'valor' => (string) ((int) ($resumen['entradas_hoy'] ?? 0)),
         ],
         [
-            'etiqueta' => 'Unidades ingresadas',
+            'etiqueta' => 'Total de unidades ingresadas',
             'valor' => number_format((int) ($resumen['unidades_hoy'] ?? 0), 0, '.', ','),
         ],
         [
-            'etiqueta' => 'Valor acumulado',
+            'etiqueta' => 'Valor total de compras',
             'valor' => $formatearMoneda((float) ($resumen['valor_hoy'] ?? 0)),
         ],
         [
-            'etiqueta' => 'Proveedores activos',
+            'etiqueta' => 'Proveedores disponibles',
             'valor' => (string) ((int) ($resumen['proveedores_activos'] ?? 0)),
         ],
     ];
@@ -150,12 +150,16 @@ function prepararDatosModuloEntradas(array $contexto = []): array
     }
 
     $detallesNormalizados = array_map(
-        static fn(array $detalle): array => [
-            'codigo' => (string) ($detalle['codigo'] ?? ''),
-            'descripcion' => (string) ($detalle['descripcion'] ?? ''),
-            'cantidad' => (string) max(0, (int) ($detalle['cantidad'] ?? 0)),
-            'precio' => number_format(max(0, (float) ($detalle['precio'] ?? 0)), 2, '.', ''),
-        ],
+        static function (array $detalle): array {
+            $precio = max(0, (float) ($detalle['precio'] ?? 0));
+
+            return [
+                'codigo' => (string) ($detalle['codigo'] ?? ''),
+                'descripcion' => (string) ($detalle['descripcion'] ?? ''),
+                'cantidad' => (string) max(0, (int) ($detalle['cantidad'] ?? 0)),
+                'precio' => $precio > 0 ? '$' . number_format($precio, 0, ',', '.') : '',
+            ];
+        },
         $detallesFormulario
     );
 
@@ -166,7 +170,7 @@ function prepararDatosModuloEntradas(array $contexto = []): array
 
     return [
         'tituloPagina' => 'Entradas',
-        'tituloSeccion' => 'Gestion de entradas',
+        'tituloSeccion' => 'Registrar entrada de inventario',
         'descripcionSeccion' => 'Registra los productos que ingresan a tu inventario.',
         'moduloActivo' => 'entradas',
         'resaltarConfiguracion' => false,

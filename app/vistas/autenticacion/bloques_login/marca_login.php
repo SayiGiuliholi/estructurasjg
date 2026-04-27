@@ -1,10 +1,5 @@
 <section class="panel-marca">
     <div class="tarjeta-marca">
-        <div class="marca-encabezado">
-            <span class="marca-clave"></span>
-            <span class="marca-sector">Gestiona tu inventario de forma inteligente y segura</span>
-        </div>
-
         <div class="simbolo-marca">
             <div class="marco-logo-marca">
                 <img
@@ -16,19 +11,12 @@
         </div>
 
         <div class="marca-texto">
-            <span class="marca-subtitulo">Empresa especializada en estructuras metalicas, rejas y soluciones en acero.</span>
-            <p class="descripcion-principal-marca">
-            </p>
-            <ul class="lista-beneficios-marca">
-                <li>Administra materiales de forma ordenada.</li>
-                <li>Controla entradas y salidas desde un solo lugar.</li>
-                <li>Manten tu inventario actualizado con mas agilidad.</li>
+            <span class="marca-sector">Controla tu inventario de forma simple.</span>
+            <ul class="lista-micro-info">
+                <li><span aria-hidden="true">&#10003;</span> Control total del inventario</li>
+                <li><span aria-hidden="true">&#10003;</span> Registro de entradas y salidas</li>
+                <li><span aria-hidden="true">&#10003;</span> Informacion en tiempo real</li>
             </ul>
-        </div>
-
-        <div class="marca-frase">
-            <strong>Tu negocio, bajo control.</strong>
-            <span></span>
         </div>
     </div>
 </section>
