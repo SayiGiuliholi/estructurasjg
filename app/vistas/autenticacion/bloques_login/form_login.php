@@ -1,3 +1,9 @@
+<?php
+$mensajeError = $mensajeError ?? null;
+$accionFormulario = $accionFormulario ?? '';
+$ultimoUsuario = $ultimoUsuario ?? '';
+$urlLogoMarca = $urlLogoMarca ?? '';
+?>
 <section class="panel-formulario">
     <div class="tarjeta-formulario card-login">
         <div class="encabezado-formulario">

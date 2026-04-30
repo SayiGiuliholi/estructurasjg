@@ -22,7 +22,7 @@ Sistema web de inventario en PHP para gestionar:
 
 ## Convencion de endpoints
 - Todo archivo accesible por URL vive en `public/`.
-- PÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ginas HTML del sistema: `public/index.php`, `public/panel.php`, `public/salir.php`.
+- Paginas HTML del sistema: `public/index.php`, `public/panel.php`, `public/salir.php`.
 - Endpoints JSON (API interna del panel): `public/api/<modulo>/<accion>.php`.
 - Ejemplo actual: `public/api/salidas/producto.php`.
 

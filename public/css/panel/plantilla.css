@@ -49,8 +49,129 @@ body {
 .distribucion {
     height: 100vh;
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
     overflow: hidden;
+}
+
+/* Sidebar minimal estilo referencia */
+.barra-lateral.sidebar-minimal {
+    background: #ffffff;
+    color: #0f172a;
+    border-right: 1px solid #e9edf3;
+    padding: 14px 10px 12px;
+    gap: 0;
+}
+
+.sidebar-superior {
+    display: grid;
+    gap: 10px;
+}
+
+.sidebar-header {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 8px 10px 4px;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.logo-minimal {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 10px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    display: grid;
+    place-items: center;
+    padding: 5px;
+}
+
+.logo-minimal-imagen {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 8px;
+}
+
+.logo-marca-texto {
+    width: 152px;
+    max-width: 100%;
+    display: block;
+    margin: 6px auto 0;
+}
+
+.barra-lateral.sidebar-minimal .menu {
+    margin-top: 8px;
+    gap: 8px;
+}
+
+.barra-lateral.sidebar-minimal .menu-item {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #111827;
+    border-radius: 10px;
+    min-height: 40px;
+    padding: 8px 11px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    font: inherit;
+    font-size: 0.93rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.barra-lateral.sidebar-minimal .menu-item:hover {
+    background: #f3f4f6;
+}
+
+.barra-lateral.sidebar-minimal .menu-item-activo {
+    background: #0f4aa6;
+    color: #ffffff;
+    cursor: default;
+}
+
+.barra-lateral.sidebar-minimal .menu-item-activo:hover {
+    background: #0f4aa6;
+}
+
+.menu-icono {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    color: #6b7280;
+}
+
+.menu-icono svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+}
+
+.barra-lateral.sidebar-minimal .menu-item:hover .menu-icono {
+    color: #111827;
+}
+
+.barra-lateral.sidebar-minimal .menu-item-activo .menu-icono {
+    color: #ffffff;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e9edf3;
+}
+
+.barra-lateral.sidebar-minimal .menu-item-logout {
+    color: #111827;
 }
 
 .barra-lateral {
@@ -1166,6 +1287,11 @@ body {
         top: auto;
         height: auto;
         overflow: visible;
+    }
+
+    .barra-lateral.sidebar-minimal {
+        border-right: 0;
+        border-bottom: 1px solid #e9edf3;
     }
 
     .contenido {

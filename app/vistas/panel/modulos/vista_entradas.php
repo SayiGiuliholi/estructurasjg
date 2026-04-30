@@ -1,3 +1,25 @@
+<?php
+$resumenIndicadores = $resumenIndicadores ?? [];
+$mensajeExito = $mensajeExito ?? '';
+$mensajeError = $mensajeError ?? '';
+$formularioEntrada = $formularioEntrada ?? [
+    'codigo_factura' => '',
+    'id_proveedor' => '',
+    'id_bodega' => '',
+    'total_factura' => '$0',
+    'detalles' => [],
+    'proveedores' => [],
+    'bodegas' => [],
+];
+$historialEntradas = $historialEntradas ?? [];
+$paginacion = $paginacion ?? [
+    'paginaActual' => 1,
+    'totalPaginas' => 1,
+    'totalRegistros' => 0,
+    'porPagina' => 20,
+    'opcionesPorPagina' => [10, 20, 50],
+];
+?>
 <div class="resumen-kpis">
     <?php foreach ($resumenIndicadores as $indicador): ?>
         <article class="kpi">

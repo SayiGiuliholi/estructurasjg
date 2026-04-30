@@ -1,3 +1,6 @@
+<?php
+$urlLogoMarca = $urlLogoMarca ?? '';
+?>
 <section class="panel-marca">
     <div class="tarjeta-marca">
         <div class="simbolo-marca">
