@@ -13,12 +13,30 @@ function prepararDatosPlantillaPanel(
     array $permisos,
     array $datosVista = []
 ): array {
-    $itemsMenu = [
+    $permisosActivos = static fn(string $clave): bool => ((int) ($permisos[$clave] ?? 0)) === 1;
+
+    $itemsMenuBase = [
         'entradas' => 'Entradas',
         'productos' => 'Productos',
         'proveedores' => 'Proveedores',
         'salidas' => 'Salidas',
     ];
+
+    $puedeAcceder = static function (string $modulo) use ($permisosActivos): bool {
+        return match ($modulo) {
+            'entradas', 'salidas' => $permisosActivos('registrar_movimientos') || $permisosActivos('consultar_movimientos'),
+            'productos' => $permisosActivos('registrar_productos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos'),
+            'proveedores' => $permisosActivos('registrar_productos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos') || $permisosActivos('configuracion'),
+            default => false,
+        };
+    };
+
+    $itemsMenu = [];
+    foreach ($itemsMenuBase as $clave => $etiqueta) {
+        if ($puedeAcceder($clave)) {
+            $itemsMenu[$clave] = $etiqueta;
+        }
+    }
 
     return [
         'tituloPagina' => $datosVista['tituloPagina'] ?? 'Panel',
@@ -29,7 +47,7 @@ function prepararDatosPlantillaPanel(
         'contenidoModulo' => $datosVista['contenidoModulo'] ?? '',
         'scriptsModulo' => $datosVista['scriptsModulo'] ?? '',
         'itemsMenu' => $itemsMenu,
-        'puedeVerConfiguracion' => (($permisos['configuracion'] ?? 0) === 1) || (($permisos['gestionar_roles'] ?? 0) === 1),
+        'puedeVerConfiguracion' => $permisosActivos('configuracion') || $permisosActivos('gestionar_roles'),
         'nombreUsuario' => $autenticacion['nombre'] ?? '',
         'usuarioAcceso' => $autenticacion['usuario'] ?? '',
         'nombreRol' => $autenticacion['rol'] ?? '',

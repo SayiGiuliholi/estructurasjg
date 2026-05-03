@@ -44,7 +44,12 @@ $paginacion = $paginacion ?? [
         <p class="nota-error"><?= htmlspecialchars($mensajeError, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
+    <?php if (isset($puedeRegistrarMovimientos) && !$puedeRegistrarMovimientos): ?>
+        <p class="nota-modulo">Modo solo lectura: puedes consultar historial, pero no registrar entradas.</p>
+    <?php endif; ?>
+
     <form class="flujo-formulario" id="form-entradas" method="post">
+        <fieldset <?= (isset($puedeRegistrarMovimientos) && !$puedeRegistrarMovimientos) ? 'disabled' : '' ?> style="border:0;padding:0;margin:0;display:grid;gap:14px;">
         <input type="hidden" name="accion" value="guardar">
 
         <section class="tarjeta flujo-bloque">
@@ -62,8 +67,8 @@ $paginacion = $paginacion ?? [
                         id="entrada-codigo-factura"
                         name="codigo_factura"
                         type="text"
-                        placeholder="Ej: FAC-2026-001"
                         value="<?= htmlspecialchars($formularioEntrada['codigo_factura'], ENT_QUOTES, 'UTF-8') ?>"
+                        readonly
                     >
                 </div>
 
@@ -170,10 +175,13 @@ $paginacion = $paginacion ?? [
             </div>
 
             <div class="fila-acciones">
-                <button type="submit" class="boton-principal">Registrar entrada</button>
-                <button type="reset" class="boton-fantasma">Cancelar</button>
+                <?php if (!isset($puedeRegistrarMovimientos) || $puedeRegistrarMovimientos): ?>
+                    <button type="submit" class="boton-principal">Registrar entrada</button>
+                    <button type="reset" class="boton-fantasma">Cancelar</button>
+                <?php endif; ?>
             </div>
         </section>
+        </fieldset>
     </form>
 </article>
 
@@ -245,6 +253,7 @@ $paginacion = $paginacion ?? [
                 <?php foreach ($historialEntradas as $entrada): ?>
                     <tr
                         class="js-historial-entrada"
+                        data-codigo="<?= htmlspecialchars((string) $entrada['codigo_producto'], ENT_QUOTES, 'UTF-8') ?>"
                         data-proveedor="<?= htmlspecialchars(strtolower((string) $entrada['proveedor']), ENT_QUOTES, 'UTF-8') ?>"
                         data-fecha="<?= htmlspecialchars((string) ($entrada['fecha_registro'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                     >

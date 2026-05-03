@@ -24,6 +24,15 @@ try {
     $producto = $repositorioSalida->obtenerProductoParaFormulario($codigo, $idBodega);
 
     if ($producto === null) {
+        if ($repositorioSalida->esProductoDesactivadoPorCodigo($codigo)) {
+            http_response_code(409);
+            echo json_encode([
+                'ok' => false,
+                'mensaje' => 'El producto esta desactivado y no se puede usar en salidas.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         http_response_code(404);
         echo json_encode([
             'ok' => false,

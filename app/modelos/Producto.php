@@ -15,6 +15,7 @@ final class Producto
         public float $precio,
         public ?string $fecha = null,
         public string $resumenBodegas = '',
+        public bool $activo = true,
     ) {
     }
 }

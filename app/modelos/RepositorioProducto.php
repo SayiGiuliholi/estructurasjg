@@ -7,14 +7,29 @@ require_once __DIR__ . '/Producto.php';
 
 final class RepositorioProducto
 {
+    private ?bool $columnaEstadoDisponible = null;
+
     public function obtenerTodos(): array
     {
         return $this->obtenerPaginado(1000000, 0);
     }
 
+    public function prepararSoporteEstado(): void
+    {
+        if ($this->tieneColumnaEstado()) {
+            return;
+        }
+
+        $conexion = obtenerConexion();
+        $conexion->exec('ALTER TABLE productos ADD COLUMN estado TINYINT(1) NOT NULL DEFAULT 1 AFTER fecha');
+        $this->columnaEstadoDisponible = true;
+    }
+
     public function obtenerPaginado(int $limite = 20, int $offset = 0): array
     {
         $conexion = obtenerConexion();
+        $tieneEstado = $this->tieneColumnaEstado();
+        $campoEstado = $tieneEstado ? 'p.estado AS estado' : '1 AS estado';
 
         $sql = <<<SQL
             SELECT
@@ -36,6 +51,7 @@ final class RepositorioProducto
                 p.stock,
                 p.precio,
                 p.fecha,
+                {$campoEstado},
                 pr.nombre AS proveedor_nombre,
                 COALESCE(
                     GROUP_CONCAT(
@@ -79,6 +95,7 @@ final class RepositorioProducto
                 (float) $fila['precio'],
                 isset($fila['fecha']) ? (string) $fila['fecha'] : null,
                 (string) ($fila['resumen_bodegas'] ?? 'Sin bodega'),
+                ((int) ($fila['estado'] ?? 1)) === 1,
             ),
             $filas
         );
@@ -87,6 +104,8 @@ final class RepositorioProducto
     public function buscarPorId(int $idProducto): ?Producto
     {
         $conexion = obtenerConexion();
+        $tieneEstado = $this->tieneColumnaEstado();
+        $campoEstado = $tieneEstado ? 'p.estado AS estado' : '1 AS estado';
 
         $sql = <<<SQL
             SELECT
@@ -108,6 +127,7 @@ final class RepositorioProducto
                 p.stock,
                 p.precio,
                 p.fecha,
+                {$campoEstado},
                 pr.nombre AS proveedor_nombre
             FROM productos p
             INNER JOIN proveedores pr ON pr.id_proveedor = p.id_proveedor
@@ -131,10 +151,12 @@ final class RepositorioProducto
             (string) $fila['descripcion'],
             (int) $fila['id_proveedor'],
             (string) $fila['proveedor_nombre'],
-            (int) $fila['stock'],
-            (float) $fila['precio'],
-            isset($fila['fecha']) ? (string) $fila['fecha'] : null,
-        );
+                (int) $fila['stock'],
+                (float) $fila['precio'],
+                isset($fila['fecha']) ? (string) $fila['fecha'] : null,
+                '',
+                ((int) ($fila['estado'] ?? 1)) === 1,
+            );
     }
 
     public function crear(array $datos): int
@@ -191,6 +213,22 @@ final class RepositorioProducto
         $sentencia->execute(['id_producto' => $idProducto]);
     }
 
+    public function cambiarEstado(int $idProducto, bool $activo): void
+    {
+        if (!$this->tieneColumnaEstado()) {
+            return;
+        }
+
+        $conexion = obtenerConexion();
+        $sentencia = $conexion->prepare(
+            'UPDATE productos SET estado = :estado WHERE id_producto = :id_producto'
+        );
+        $sentencia->execute([
+            'id_producto' => $idProducto,
+            'estado' => $activo ? 1 : 0,
+        ]);
+    }
+
     public function contarTotal(): int
     {
         $conexion = obtenerConexion();
@@ -219,5 +257,25 @@ final class RepositorioProducto
         $conexion = obtenerConexion();
         $fila = $conexion->query('SELECT COALESCE(SUM(stock * precio), 0) AS valor FROM productos')->fetch();
         return (float) ($fila['valor'] ?? 0);
+    }
+
+    private function tieneColumnaEstado(): bool
+    {
+        if ($this->columnaEstadoDisponible !== null) {
+            return $this->columnaEstadoDisponible;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = <<<SQL
+            SELECT COUNT(*) AS total
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'productos'
+              AND COLUMN_NAME = 'estado'
+        SQL;
+        $fila = $conexion->query($sql)->fetch();
+        $this->columnaEstadoDisponible = ((int) ($fila['total'] ?? 0)) > 0;
+
+        return $this->columnaEstadoDisponible;
     }
 }

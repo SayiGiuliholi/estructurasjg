@@ -1,6 +1,13 @@
 <?php
 
 declare(strict_types=1);
+
+$mensajeExito = $mensajeExito ?? '';
+$mensajeError = $mensajeError ?? '';
+$formularioUsuario = $formularioUsuario ?? ['id_usuario'=>0,'nombre'=>'','usuario'=>'','id_rol'=>'','estado'=>1];
+$rolesOpciones = $rolesOpciones ?? [];
+$usuarios = $usuarios ?? [];
+$rolesConPermisos = $rolesConPermisos ?? [];
 ?>
 <div class="contenido-personalizado">
     <?php if ($mensajeExito !== ''): ?>
@@ -47,7 +54,7 @@ declare(strict_types=1);
 
             <div class="campo">
                 <label for="cfg-contrasena">
-                    <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contrasena (opcional para cambiar)' : 'Contrasena' ?>
+                    <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contraseña (opcional para cambiar)' : 'Contraseña' ?>
                 </label>
                 <input id="cfg-contrasena" name="contrasena" type="password" <?= (int) $formularioUsuario['id_usuario'] > 0 ? '' : 'required' ?>>
             </div>
@@ -67,15 +74,20 @@ declare(strict_types=1);
                 </select>
             </div>
 
-            <div class="control-linea campo-amplio">
+            <div class="control-linea campo-amplio control-linea-estado">
                 <div>
                     <strong>Usuario activo</strong>
-                    <span>Si lo desactivas, no podra iniciar sesion.</span>
+                    <span>ON: puede iniciar sesion. OFF: usuario bloqueado.</span>
+                    <div class="control-estado-usuario">
+                        <span class="etiqueta-estado-usuario <?= (int) $formularioUsuario['estado'] === 1 ? 'activo' : 'inactivo' ?>">
+                            <?= (int) $formularioUsuario['estado'] === 1 ? 'Activo' : 'Deshabilitado' ?>
+                        </span>
+                        <label class="switch switch-destacado" title="Cambiar estado de usuario">
+                            <input type="checkbox" name="estado" <?= (int) $formularioUsuario['estado'] === 1 ? 'checked' : '' ?>>
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
                 </div>
-                <label class="switch">
-                    <input type="checkbox" name="estado" <?= (int) $formularioUsuario['estado'] === 1 ? 'checked' : '' ?>>
-                    <span class="switch-slider"></span>
-                </label>
             </div>
 
             <div class="fila-acciones campo-amplio">
@@ -144,6 +156,16 @@ declare(strict_types=1);
             </div>
         </div>
 
+        <?php
+        $ayudaPermisos = [
+            'registrar_productos' => 'Crear productos nuevos y cargarlos al inventario.',
+            'modificar_productos' => 'Editar datos, precio o estado de productos.',
+            'registrar_movimientos' => 'Registrar entradas y salidas de inventario.',
+            'consultar_movimientos' => 'Ver historial de entradas, salidas y productos.',
+            'gestionar_roles' => 'Cambiar permisos por rol.',
+            'configuracion' => 'Entrar al modulo de configuracion.',
+        ];
+        ?>
         <?php foreach ($rolesConPermisos as $rol): ?>
             <form method="post" class="tarjeta" style="border-radius: 12px; box-shadow: none;">
                 <input type="hidden" name="accion" value="guardar_permisos_rol">
@@ -157,33 +179,53 @@ declare(strict_types=1);
                     <button type="submit" class="boton-principal">Guardar permisos</button>
                 </div>
 
-                <div class="formulario-grid" style="margin-top: 12px;">
-                    <label class="control-linea">
-                        <span>Registrar productos</span>
+                <p class="nota-ayuda-permisos">Marca solo lo que este rol puede hacer.</p>
+                <div class="permisos-grid" style="margin-top: 12px;">
+                    <label class="permiso-item">
                         <input type="checkbox" name="registrar_productos" <?= $rol['permisos']['registrar_productos'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Registrar productos</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['registrar_productos'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
-                    <label class="control-linea">
-                        <span>Modificar productos</span>
+                    <label class="permiso-item">
                         <input type="checkbox" name="modificar_productos" <?= $rol['permisos']['modificar_productos'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Modificar productos</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['modificar_productos'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
-                    <label class="control-linea">
-                        <span>Registrar movimientos</span>
+                    <label class="permiso-item">
                         <input type="checkbox" name="registrar_movimientos" <?= $rol['permisos']['registrar_movimientos'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Registrar movimientos</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['registrar_movimientos'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
-                    <label class="control-linea">
-                        <span>Consultar movimientos</span>
+                    <label class="permiso-item">
                         <input type="checkbox" name="consultar_movimientos" <?= $rol['permisos']['consultar_movimientos'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Consultar movimientos</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['consultar_movimientos'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
-                    <label class="control-linea">
-                        <span>Gestionar roles</span>
+                    <label class="permiso-item">
                         <input type="checkbox" name="gestionar_roles" <?= $rol['permisos']['gestionar_roles'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Gestionar roles</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['gestionar_roles'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
-                    <label class="control-linea">
-                        <span>Configuracion</span>
+                    <label class="permiso-item">
                         <input type="checkbox" name="configuracion" <?= $rol['permisos']['configuracion'] ? 'checked' : '' ?>>
+                        <span class="permiso-texto">
+                            <strong>Configuracion</strong>
+                            <small><?= htmlspecialchars($ayudaPermisos['configuracion'], ENT_QUOTES, 'UTF-8') ?></small>
+                        </span>
                     </label>
                 </div>
             </form>
         <?php endforeach; ?>
     </article>
 </div>
+

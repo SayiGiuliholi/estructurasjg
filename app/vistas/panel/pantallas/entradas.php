@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
 $repositorioEntrada = new RepositorioEntrada();
 $repositorioProveedor = new RepositorioProveedor();
 $repositorioBodega = new RepositorioBodega();
+$puedeRegistrarMovimientos = ((int) ($permisos['registrar_movimientos'] ?? 0)) === 1;
 
 $opcionesPorPagina = [10, 20, 50];
 $porPagina = (int) ($_GET['por_pagina'] ?? 20);
@@ -37,7 +38,7 @@ $normalizarMoneda = static function ($valor): float {
 };
 
 $formularioEntrada = [
-    'codigo_factura' => '',
+    'codigo_factura' => $repositorioEntrada->obtenerSiguienteCodigoFactura(),
     'id_proveedor' => '',
     'id_bodega' => '',
     'detalles' => [[
@@ -49,6 +50,9 @@ $formularioEntrada = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!$puedeRegistrarMovimientos) {
+        $mensajeError = 'Tu rol solo permite consultar movimientos. No puedes registrar entradas.';
+    } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
     if ($accion === 'guardar') {
@@ -146,32 +150,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (count($lineasValidas) === 0) {
                 $mensajeError = 'Agrega al menos una linea de producto valida en la factura.';
             } else {
-                try {
-                    $repositorioEntrada->registrarEntradaFactura([
-                        'codigo_factura' => $codigoFactura,
-                        'id_proveedor' => $idProveedor,
-                        'id_bodega' => $idBodega,
-                        'id_usuario' => $idUsuario,
-                    ], array_values($lineasValidas));
+                $codigosNormalizados = array_map(
+                    static fn(array $detalle): string => strtoupper(trim((string) ($detalle['codigo'] ?? ''))),
+                    $lineasValidas
+                );
 
-                    $mensajeExito = 'Factura de entrada registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
-                    $formularioEntrada = [
-                        'codigo_factura' => '',
-                        'id_proveedor' => '',
-                        'id_bodega' => '',
-                        'detalles' => [[
-                            'codigo' => '',
-                            'descripcion' => '',
-                            'cantidad' => '1',
-                            'precio' => '0',
-                        ]],
-                    ];
-                } catch (Throwable $error) {
-                    $mensajeError = 'No fue posible registrar la factura. Revisa datos duplicados o relaciones de la base de datos.';
+                if (count($codigosNormalizados) !== count(array_unique($codigosNormalizados))) {
+                    $mensajeError = 'No se puede repetir el codigo del producto en una misma entrada.';
+                } else {
+                    $codigosExistentes = array_values(array_filter(
+                        $codigosNormalizados,
+                        static fn(string $codigo): bool => $repositorioEntrada->existeProductoPorCodigo($codigo)
+                    ));
+
+                    if (count($codigosExistentes) > 0) {
+                        $mensajeError = 'El codigo de producto ya existe (' . implode(', ', array_unique($codigosExistentes)) . '). No se permiten codigos repetidos.';
+                    } else {
+                        try {
+                            $repositorioEntrada->registrarEntradaFactura([
+                                'codigo_factura' => $codigoFactura,
+                                'id_proveedor' => $idProveedor,
+                                'id_bodega' => $idBodega,
+                                'id_usuario' => $idUsuario,
+                            ], array_values($lineasValidas));
+
+                            $mensajeExito = 'Factura de entrada registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
+                            $formularioEntrada = [
+                                'codigo_factura' => $repositorioEntrada->obtenerSiguienteCodigoFactura(),
+                                'id_proveedor' => '',
+                                'id_bodega' => '',
+                                'detalles' => [[
+                                    'codigo' => '',
+                                    'descripcion' => '',
+                                    'cantidad' => '1',
+                                    'precio' => '0',
+                                ]],
+                            ];
+                        } catch (Throwable $error) {
+                            $mensajeError = $error->getMessage();
+                        }
+                    }
                 }
             }
         }
     }
+    }
+}
+
+if (($formularioEntrada['codigo_factura'] ?? '') === '') {
+    $formularioEntrada['codigo_factura'] = $repositorioEntrada->obtenerSiguienteCodigoFactura();
 }
 
 $resumen = $repositorioEntrada->obtenerResumenIndicadores();

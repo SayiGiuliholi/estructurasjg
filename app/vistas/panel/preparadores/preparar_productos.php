@@ -32,6 +32,9 @@ function prepararDatosModuloProductos(array $contexto = []): array
                 'descripcion' => $producto->descripcion,
                 'proveedor' => $producto->nombreProveedor,
                 'fecha_registro' => $fechaRegistro,
+                'activo' => $producto->activo,
+                'estado' => $producto->activo ? 'Activo' : 'Inactivo',
+                'tipoEstado' => $producto->activo ? 'ok' : 'alerta',
                 'bodegas' => trim($producto->resumenBodegas) !== ''
                     ? (preg_replace('/\s*\(\d+\)/', '', $producto->resumenBodegas) ?: 'Sin bodega')
                     : 'Sin bodega',
@@ -41,6 +44,21 @@ function prepararDatosModuloProductos(array $contexto = []): array
         },
         $productos
     );
+
+    $catalogoPrincipal = [];
+    $catalogoSecundaria = [];
+    foreach ($catalogoProductos as $item) {
+        $bodegas = strtolower((string) ($item['bodegas'] ?? ''));
+        $enPrincipal = str_contains($bodegas, 'bod-01') || str_contains($bodegas, 'principal');
+        $enSecundaria = str_contains($bodegas, 'bod-02') || str_contains($bodegas, 'secundaria');
+
+        if ($enPrincipal) {
+            $catalogoPrincipal[] = $item;
+        }
+        if ($enSecundaria) {
+            $catalogoSecundaria[] = $item;
+        }
+    }
 
     $resumenIndicadores = [
         [
@@ -65,6 +83,8 @@ function prepararDatosModuloProductos(array $contexto = []): array
         'resaltarConfiguracion' => false,
         'resumenIndicadores' => $resumenIndicadores,
         'catalogoProductos' => $catalogoProductos,
+        'catalogoPrincipal' => $catalogoPrincipal,
+        'catalogoSecundaria' => $catalogoSecundaria,
         'paginacion' => $paginacion,
         'controlVisual' => [
             [

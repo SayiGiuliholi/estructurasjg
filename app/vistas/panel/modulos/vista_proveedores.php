@@ -1,3 +1,4 @@
+<?php if (!isset($puedeGestionProveedores) || $puedeGestionProveedores): ?>
 <article class="tarjeta bloque">
     <div class="cabecera-modulo">
         <div>
@@ -17,7 +18,7 @@
         <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) ($fichaProveedor['id_proveedor'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         <div class="campo">
             <label for="prov-ruc">NIT</label>
-            <input id="prov-ruc" name="ruc" type="text" required value="<?= htmlspecialchars($fichaProveedor['ruc'], ENT_QUOTES, 'UTF-8') ?>">
+            <input id="prov-ruc" name="ruc" type="text" inputmode="numeric" pattern="[0-9]+" required value="<?= htmlspecialchars($fichaProveedor['ruc'], ENT_QUOTES, 'UTF-8') ?>" oninput="this.value=this.value.replace(/\D/g,'')">
         </div>
         <div class="campo">
             <label for="prov-nombre">Nombre</label>
@@ -25,7 +26,7 @@
         </div>
         <div class="campo">
             <label for="prov-telefono">Telefono</label>
-            <input id="prov-telefono" name="telefono" type="text" required value="<?= htmlspecialchars($fichaProveedor['telefono'], ENT_QUOTES, 'UTF-8') ?>">
+            <input id="prov-telefono" name="telefono" type="text" inputmode="numeric" pattern="[0-9]+" required value="<?= htmlspecialchars($fichaProveedor['telefono'], ENT_QUOTES, 'UTF-8') ?>" oninput="this.value=this.value.replace(/\D/g,'')">
         </div>
         <div class="campo campo-amplio">
             <label for="prov-direccion">Direccion</label>
@@ -41,6 +42,11 @@
         </div>
     </form>
 </article>
+<?php else: ?>
+<article class="tarjeta bloque">
+    <p class="nota-modulo">Modo solo lectura: puedes consultar proveedores, pero no crearlos ni editarlos.</p>
+</article>
+<?php endif; ?>
 
 <article class="tarjeta tarjeta-tabla">
     <div class="cabecera-modulo" style="padding: 22px 22px 14px;">
@@ -54,16 +60,18 @@
                 <tr>
                     <th>NIT</th>
                     <th>Proveedor</th>
-                    <th>Teléfono</th>
-                    <th>Dirección</th>
+                    <th>Telefono</th>
+                    <th>Direccion</th>
                     <th>Estado</th>
-                    <th>Acción</th>
+                    <?php if (!isset($puedeGestionProveedores) || $puedeGestionProveedores): ?>
+                        <th>Accion</th>
+                    <?php endif; ?>
                 </tr>
             </thead>
             <tbody>
                 <?php if (count($directorioProveedores) === 0): ?>
                     <tr>
-                        <td colspan="6">Aun no hay proveedores registrados.</td>
+                        <td colspan="<?= (!isset($puedeGestionProveedores) || $puedeGestionProveedores) ? '6' : '5' ?>">Aun no hay proveedores registrados.</td>
                     </tr>
                 <?php endif; ?>
 
@@ -74,18 +82,20 @@
                         <td><?= htmlspecialchars($proveedor['telefono'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($proveedor['direccion'], ENT_QUOTES, 'UTF-8') ?></td>
                         <td><span class="estado <?= htmlspecialchars($proveedor['tipoEstado'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($proveedor['estado'], ENT_QUOTES, 'UTF-8') ?></span></td>
-                        <td>
-                            <div class="acciones-tabla">
-                                <form method="post" class="form-accion-tabla">
-                                    <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" name="accion" value="cargar" class="boton-fantasma">Editar</button>
-                                </form>
-                                <form method="post" class="form-accion-tabla">
-                                    <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <button type="submit" name="accion" value="eliminar" class="boton-peligro">Eliminar</button>
-                                </form>
-                            </div>
-                        </td>
+                        <?php if (!isset($puedeGestionProveedores) || $puedeGestionProveedores): ?>
+                            <td>
+                                <div class="acciones-tabla">
+                                    <form method="post" class="form-accion-tabla">
+                                        <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" name="accion" value="cargar" class="boton-fantasma">Editar</button>
+                                    </form>
+                                    <form method="post" class="form-accion-tabla">
+                                        <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <button type="submit" name="accion" value="eliminar" class="boton-peligro">Eliminar</button>
+                                    </form>
+                                </div>
+                            </td>
+                        <?php endif; ?>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

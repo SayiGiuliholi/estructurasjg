@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
 
 $repositorioSalida = new RepositorioSalida();
 $repositorioBodega = new RepositorioBodega();
+$puedeRegistrarMovimientos = ((int) ($permisos['registrar_movimientos'] ?? 0)) === 1;
 
 $opcionesPorPagina = [10, 20, 50];
 $porPagina = (int) ($_GET['por_pagina'] ?? 20);
@@ -35,7 +36,7 @@ $normalizarMoneda = static function ($valor): float {
 };
 
 $formularioSalida = [
-    'codigo_factura' => '',
+    'codigo_factura' => $repositorioSalida->obtenerSiguienteCodigoFactura(),
     'id_bodega' => '',
     'motivo_salida' => 'normal',
     'detalles' => [[
@@ -48,6 +49,9 @@ $formularioSalida = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!$puedeRegistrarMovimientos) {
+        $mensajeError = 'Tu rol solo permite consultar movimientos. No puedes registrar salidas.';
+    } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
     if ($accion === 'registrar') {
@@ -154,10 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ], array_values($lineasValidas));
 
                         $mensajeExito = 'Factura de salida registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
-                        $formularioSalida = [
-                            'codigo_factura' => '',
-                            'id_bodega' => '',
-                            'motivo_salida' => 'normal',
+                            $formularioSalida = [
+                                'codigo_factura' => $repositorioSalida->obtenerSiguienteCodigoFactura(),
+                                'id_bodega' => '',
+                                'motivo_salida' => 'normal',
                             'detalles' => [[
                                 'codigo' => '',
                                 'descripcion' => '',
@@ -173,6 +177,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+    }
+}
+
+if (($formularioSalida['codigo_factura'] ?? '') === '') {
+    $formularioSalida['codigo_factura'] = $repositorioSalida->obtenerSiguienteCodigoFactura();
 }
 
 $totalRegistrosHistorial = $repositorioSalida->contarHistorial();

@@ -12,12 +12,12 @@ $urlSalir = $urlSalir ?? '';
         <div class="sidebar-header">
             <div class="logo-minimal" aria-hidden="true">
                 <img
-                    src="/Estructurasjg/public/imagenes/marca/logo-sidebar.png"
+                    src="/Estructurasjg/public/imagenes/marca/logo-login-principal.png"
                     alt="Logo de Estructuras JG"
                     class="logo-minimal-imagen"
                 >
             </div>
-            <h3>Estructuras JG</h3>
+            <h3 class="sidebar-brand-title">Estructuras JG</h3>
         </div>
 
         <nav class="menu" aria-label="Navegacion principal">

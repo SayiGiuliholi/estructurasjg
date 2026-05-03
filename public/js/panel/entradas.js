@@ -163,6 +163,16 @@
         formatearPrecioInput(inputPrecio);
     });
 
+    var formularioEntradas = document.getElementById('form-entradas');
+    if (formularioEntradas) {
+        formularioEntradas.addEventListener('submit', function () {
+            var botonesSubmit = formularioEntradas.querySelectorAll('button[type="submit"]');
+            botonesSubmit.forEach(function (boton) {
+                boton.disabled = true;
+            });
+        });
+    }
+
     recalcularFactura();
 })();
 
@@ -203,16 +213,19 @@
 
     function aplicarFiltros() {
         var termino = normalizar(inputBuscar.value);
+        var esBusquedaCodigo = /^\d+$/.test(termino);
         var proveedor = normalizar(selectProveedor.value);
         var fechaSeleccionada = fechaInputARegistro(String(inputFecha.value || '').trim());
         var visibles = 0;
 
         filasHistorial.forEach(function (fila) {
             var textoFila = normalizar(fila.textContent || '');
+            var codigoFila = normalizar(fila.getAttribute('data-codigo') || '');
             var proveedorFila = normalizar(fila.getAttribute('data-proveedor') || '');
             var fechaFila = String(fila.getAttribute('data-fecha') || '').trim();
 
-            var coincideTexto = termino === '' || textoFila.indexOf(termino) !== -1;
+            var coincideTexto = termino === ''
+                || (esBusquedaCodigo ? codigoFila === termino : textoFila.indexOf(termino) !== -1);
             var coincideProveedor = proveedor === '' || proveedorFila === proveedor;
             var coincideFecha = fechaSeleccionada === '' || fechaFila === fechaSeleccionada;
             var mostrar = coincideTexto && coincideProveedor && coincideFecha;

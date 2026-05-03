@@ -6,6 +6,11 @@ require_once __DIR__ . '/../configuracion/conexion.php';
 
 final class RepositorioSalida
 {
+    private ?bool $columnaEstadoDisponible = null;
+    private const PREFIJO_FACTURA = 'FAC-2026-';
+    private const RANGO_INICIO = 5000;
+    private const RANGO_FIN = 9999;
+
     public function registrarSalida(array $datos): void
     {
         $this->registrarSalidaFactura(
@@ -21,6 +26,13 @@ final class RepositorioSalida
                 'precio_unitario' => (float) ($datos['precio_unitario'] ?? 0),
             ]]
         );
+    }
+
+    public function obtenerSiguienteCodigoFactura(): string
+    {
+        $conexion = obtenerConexion();
+        $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'ventas', self::RANGO_INICIO, self::RANGO_FIN);
+        return self::PREFIJO_FACTURA . $numero;
     }
 
     public function registrarSalidaFactura(array $cabecera, array $detalles): void
@@ -58,6 +70,9 @@ final class RepositorioSalida
 
                 $producto = $this->buscarProductoPorCodigoParaActualizar($conexion, $codigoProducto);
                 if ($producto === null) {
+                    if ($this->esProductoDesactivadoPorCodigoInterno($conexion, $codigoProducto)) {
+                        throw new RuntimeException('El codigo "' . $codigoProducto . '" esta desactivado.');
+                    }
                     throw new RuntimeException('El codigo "' . $codigoProducto . '" no existe.');
                 }
 
@@ -129,6 +144,7 @@ final class RepositorioSalida
         }
 
         $conexion = obtenerConexion();
+        $filtroEstado = $this->tieneColumnaEstado() ? ' AND p.estado = 1 ' : '';
 
         $sql = <<<SQL
             SELECT
@@ -143,6 +159,7 @@ final class RepositorioSalida
                 ON sb.id_producto = p.id_producto
                 AND sb.id_bodega = :id_bodega
             WHERE p.codigo = :codigo
+            {$filtroEstado}
             LIMIT 1
         SQL;
 
@@ -155,6 +172,17 @@ final class RepositorioSalida
         $fila = $sentencia->fetch();
 
         return $fila ?: null;
+    }
+
+    public function esProductoDesactivadoPorCodigo(string $codigoProducto): bool
+    {
+        $codigo = trim($codigoProducto);
+        if ($codigo === '' || !$this->tieneColumnaEstado()) {
+            return false;
+        }
+
+        $conexion = obtenerConexion();
+        return $this->esProductoDesactivadoPorCodigoInterno($conexion, $codigo);
     }
 
     public function obtenerResumenIndicadores(): array
@@ -243,10 +271,12 @@ final class RepositorioSalida
 
     private function buscarProductoPorCodigoParaActualizar(PDO $conexion, string $codigo): ?array
     {
+        $filtroEstado = $this->tieneColumnaEstado() ? ' AND estado = 1 ' : '';
         $sql = <<<SQL
             SELECT id_producto, descripcion, stock, precio
             FROM productos
             WHERE codigo = :codigo
+            {$filtroEstado}
             LIMIT 1
             FOR UPDATE
         SQL;
@@ -257,6 +287,45 @@ final class RepositorioSalida
         $fila = $sentencia->fetch();
 
         return $fila ?: null;
+    }
+
+    private function esProductoDesactivadoPorCodigoInterno(PDO $conexion, string $codigo): bool
+    {
+        if (!$this->tieneColumnaEstado()) {
+            return false;
+        }
+
+        $sql = <<<SQL
+            SELECT 1
+            FROM productos
+            WHERE codigo = :codigo
+              AND estado = 0
+            LIMIT 1
+        SQL;
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['codigo' => $codigo]);
+
+        return (bool) $sentencia->fetchColumn();
+    }
+
+    private function tieneColumnaEstado(): bool
+    {
+        if ($this->columnaEstadoDisponible !== null) {
+            return $this->columnaEstadoDisponible;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = <<<SQL
+            SELECT COUNT(*) AS total
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'productos'
+              AND COLUMN_NAME = 'estado'
+        SQL;
+        $fila = $conexion->query($sql)->fetch();
+        $this->columnaEstadoDisponible = ((int) ($fila['total'] ?? 0)) > 0;
+
+        return $this->columnaEstadoDisponible;
     }
 
     private function obtenerStockBodegaParaActualizar(PDO $conexion, int $idBodega, int $idProducto): ?array
@@ -282,8 +351,17 @@ final class RepositorioSalida
 
     private function crearVenta(PDO $conexion, array $datos): int
     {
-        $codigoFactura = trim((string) ($datos['codigo_factura'] ?? ''));
-        $codigoVenta = $codigoFactura !== '' ? $codigoFactura : 'VTA-' . date('YmdHis');
+        $lock = 'factura_salidas_2026';
+        if (!$this->adquirirBloqueoFactura($conexion, $lock)) {
+            throw new RuntimeException('No se pudo bloquear la numeracion de facturas de salidas.');
+        }
+
+        try {
+            $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'ventas', self::RANGO_INICIO, self::RANGO_FIN, true);
+            $codigoVenta = self::PREFIJO_FACTURA . $numero;
+        } finally {
+            $this->liberarBloqueoFactura($conexion, $lock);
+        }
 
         $sql = <<<SQL
             INSERT INTO ventas (
@@ -314,6 +392,53 @@ final class RepositorioSalida
         ]);
 
         return (int) $conexion->lastInsertId();
+    }
+
+    private function obtenerSiguienteNumeroFactura(
+        PDO $conexion,
+        string $tabla,
+        int $inicio,
+        int $fin,
+        bool $forUpdate = false
+    ): int {
+        $forUpdateSql = $forUpdate ? ' FOR UPDATE' : '';
+        $sql = "SELECT codigo FROM {$tabla} WHERE codigo LIKE :prefijo{$forUpdateSql}";
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['prefijo' => self::PREFIJO_FACTURA . '%']);
+        $filas = $sentencia->fetchAll();
+
+        $usados = [];
+        foreach ($filas as $fila) {
+            $codigo = (string) ($fila['codigo'] ?? '');
+            if (preg_match('/^FAC-2026-(\d{4})$/', $codigo, $coincidencia) === 1) {
+                $numero = (int) $coincidencia[1];
+                if ($numero >= $inicio && $numero <= $fin) {
+                    $usados[$numero] = true;
+                }
+            }
+        }
+
+        for ($n = $inicio; $n <= $fin; $n++) {
+            if (!isset($usados[$n])) {
+                return $n;
+            }
+        }
+
+        throw new RuntimeException('Se agotaron los consecutivos de facturas para salidas (5000-9999).');
+    }
+
+    private function adquirirBloqueoFactura(PDO $conexion, string $nombre): bool
+    {
+        $sentencia = $conexion->prepare('SELECT GET_LOCK(:nombre, 5) AS bloqueado');
+        $sentencia->execute(['nombre' => $nombre]);
+        $fila = $sentencia->fetch();
+        return ((int) ($fila['bloqueado'] ?? 0)) === 1;
+    }
+
+    private function liberarBloqueoFactura(PDO $conexion, string $nombre): void
+    {
+        $sentencia = $conexion->prepare('SELECT RELEASE_LOCK(:nombre) AS liberado');
+        $sentencia->execute(['nombre' => $nombre]);
     }
 
     private function crearDetalleVenta(

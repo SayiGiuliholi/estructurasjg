@@ -34,7 +34,6 @@ $paginacion = $paginacion ?? [
             <h3 class="subtitulo">Informacion de la salida</h3>
             
         </div>
-        <button type="submit" form="form-salidas" class="boton-principal">Registrar salida</button>
     </div>
 
     <?php if ($mensajeExito !== ''): ?>
@@ -45,7 +44,12 @@ $paginacion = $paginacion ?? [
         <p class="nota-error"><?= htmlspecialchars($mensajeError, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
+    <?php if (isset($puedeRegistrarMovimientos) && !$puedeRegistrarMovimientos): ?>
+        <p class="nota-modulo">Modo solo lectura: puedes consultar historial, pero no registrar salidas.</p>
+    <?php endif; ?>
+
     <form class="flujo-formulario" id="form-salidas" method="post">
+        <fieldset <?= (isset($puedeRegistrarMovimientos) && !$puedeRegistrarMovimientos) ? 'disabled' : '' ?> style="border:0;padding:0;margin:0;display:grid;gap:14px;">
         <input type="hidden" name="accion" value="registrar">
 
         <section class="tarjeta flujo-bloque">
@@ -63,8 +67,8 @@ $paginacion = $paginacion ?? [
                         id="salida-codigo-factura"
                         name="codigo_factura"
                         type="text"
-                        placeholder="Ej: FAC-2026-0001"
                         value="<?= htmlspecialchars($formularioSalida['codigo_factura'], ENT_QUOTES, 'UTF-8') ?>"
+                        readonly
                     >
                 </div>
 
@@ -166,9 +170,13 @@ $paginacion = $paginacion ?? [
             </div>
 
             <div class="fila-acciones">
-                <button type="reset" class="boton-fantasma">Limpiar formulario</button>
+                <?php if (!isset($puedeRegistrarMovimientos) || $puedeRegistrarMovimientos): ?>
+                    <button type="submit" form="form-salidas" class="boton-principal">Registrar salida</button>
+                    <button type="reset" class="boton-fantasma">Cancelar</button>
+                <?php endif; ?>
             </div>
         </section>
+        </fieldset>
     </form>
 </article>
 
@@ -182,6 +190,12 @@ $paginacion = $paginacion ?? [
 
     <?php
     $bodegasHistorial = [];
+    foreach (($formularioSalida['bodegas'] ?? []) as $bodegaFormulario) {
+        $nombreBodega = trim((string) ($bodegaFormulario['nombre'] ?? ''));
+        if ($nombreBodega !== '') {
+            $bodegasHistorial[$nombreBodega] = $nombreBodega;
+        }
+    }
     foreach ($historialSalidas as $salidaHistorial) {
         $nombreBodega = trim((string) ($salidaHistorial['bodega'] ?? ''));
         if ($nombreBodega !== '') {
@@ -243,6 +257,7 @@ $paginacion = $paginacion ?? [
                 <?php foreach ($historialSalidas as $salida): ?>
                     <tr
                         class="js-historial-salida"
+                        data-codigo="<?= htmlspecialchars((string) $salida['codigo'], ENT_QUOTES, 'UTF-8') ?>"
                         data-bodega="<?= htmlspecialchars(strtolower((string) $salida['bodega']), ENT_QUOTES, 'UTF-8') ?>"
                         data-fecha="<?= htmlspecialchars((string) ($salida['fecha_registro'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
                     >

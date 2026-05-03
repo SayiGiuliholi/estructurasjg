@@ -6,6 +6,48 @@ require_once __DIR__ . '/../configuracion/conexion.php';
 
 final class RepositorioEntrada
 {
+    private ?bool $columnaEstadoDisponible = null;
+    private const PREFIJO_FACTURA = 'FAC-2026-';
+    private const RANGO_INICIO = 1001;
+    private const RANGO_FIN = 4999;
+
+    public function existeProductoPorCodigo(string $codigoProducto): bool
+    {
+        $codigo = trim($codigoProducto);
+        if ($codigo === '') {
+            return false;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = 'SELECT 1 FROM productos WHERE codigo = :codigo LIMIT 1';
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['codigo' => $codigo]);
+
+        return (bool) $sentencia->fetchColumn();
+    }
+
+    public function existeCodigoCompra(string $codigoCompra): bool
+    {
+        $codigo = trim($codigoCompra);
+        if ($codigo === '') {
+            return false;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = 'SELECT 1 FROM compras WHERE codigo = :codigo LIMIT 1';
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['codigo' => $codigo]);
+
+        return (bool) $sentencia->fetchColumn();
+    }
+
+    public function obtenerSiguienteCodigoFactura(): string
+    {
+        $conexion = obtenerConexion();
+        $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'compras', self::RANGO_INICIO, self::RANGO_FIN);
+        return self::PREFIJO_FACTURA . $numero;
+    }
+
     public function registrarEntrada(array $datos): void
     {
         $this->registrarEntradaFactura(
@@ -205,13 +247,19 @@ final class RepositorioEntrada
 
     private function obtenerOCrearProducto(PDO $conexion, array $datos): int
     {
-        $sqlBuscar = 'SELECT id_producto FROM productos WHERE codigo = :codigo LIMIT 1';
+        $campoEstado = $this->tieneColumnaEstado() ? ', estado' : '';
+        $sqlBuscar = 'SELECT id_producto' . $campoEstado . ' FROM productos WHERE codigo = :codigo LIMIT 1';
         $sentenciaBuscar = $conexion->prepare($sqlBuscar);
         $sentenciaBuscar->execute(['codigo' => $datos['codigo']]);
         $fila = $sentenciaBuscar->fetch();
 
         if ($fila) {
             $idProducto = (int) $fila['id_producto'];
+            if ($this->tieneColumnaEstado() && ((int) ($fila['estado'] ?? 1)) === 0) {
+                throw new RuntimeException(
+                    'El codigo "' . ((string) ($datos['codigo'] ?? '')) . '" esta desactivado y no puede registrarse.'
+                );
+            }
 
             $sqlActualizar = <<<SQL
                 UPDATE productos
@@ -249,10 +297,40 @@ final class RepositorioEntrada
         return (int) $conexion->lastInsertId();
     }
 
+    private function tieneColumnaEstado(): bool
+    {
+        if ($this->columnaEstadoDisponible !== null) {
+            return $this->columnaEstadoDisponible;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = <<<SQL
+            SELECT COUNT(*) AS total
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'productos'
+              AND COLUMN_NAME = 'estado'
+        SQL;
+        $fila = $conexion->query($sql)->fetch();
+        $this->columnaEstadoDisponible = ((int) ($fila['total'] ?? 0)) > 0;
+
+        return $this->columnaEstadoDisponible;
+    }
+
     private function crearCompra(PDO $conexion, array $datos): int
     {
-        $codigoFactura = trim((string) ($datos['codigo_factura'] ?? ''));
-        $codigoCompra = $codigoFactura !== '' ? $codigoFactura : 'CMP-' . date('YmdHis');
+        $lock = 'factura_entradas_2026';
+        if (!$this->adquirirBloqueoFactura($conexion, $lock)) {
+            throw new RuntimeException('No se pudo bloquear la numeracion de facturas de entradas.');
+        }
+
+        try {
+            $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'compras', self::RANGO_INICIO, self::RANGO_FIN, true);
+            $codigoCompra = self::PREFIJO_FACTURA . $numero;
+        } finally {
+            $this->liberarBloqueoFactura($conexion, $lock);
+        }
+
         $total = isset($datos['total'])
             ? (float) $datos['total']
             : ((float) $datos['cantidad'] * (float) $datos['precio']);
@@ -292,6 +370,53 @@ final class RepositorioEntrada
         ]);
 
         return (int) $conexion->lastInsertId();
+    }
+
+    private function obtenerSiguienteNumeroFactura(
+        PDO $conexion,
+        string $tabla,
+        int $inicio,
+        int $fin,
+        bool $forUpdate = false
+    ): int {
+        $forUpdateSql = $forUpdate ? ' FOR UPDATE' : '';
+        $sql = "SELECT codigo FROM {$tabla} WHERE codigo LIKE :prefijo{$forUpdateSql}";
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['prefijo' => self::PREFIJO_FACTURA . '%']);
+        $filas = $sentencia->fetchAll();
+
+        $usados = [];
+        foreach ($filas as $fila) {
+            $codigo = (string) ($fila['codigo'] ?? '');
+            if (preg_match('/^FAC-2026-(\d{4})$/', $codigo, $coincidencia) === 1) {
+                $numero = (int) $coincidencia[1];
+                if ($numero >= $inicio && $numero <= $fin) {
+                    $usados[$numero] = true;
+                }
+            }
+        }
+
+        for ($n = $inicio; $n <= $fin; $n++) {
+            if (!isset($usados[$n])) {
+                return $n;
+            }
+        }
+
+        throw new RuntimeException('Se agotaron los consecutivos de facturas para entradas (1001-4999).');
+    }
+
+    private function adquirirBloqueoFactura(PDO $conexion, string $nombre): bool
+    {
+        $sentencia = $conexion->prepare('SELECT GET_LOCK(:nombre, 5) AS bloqueado');
+        $sentencia->execute(['nombre' => $nombre]);
+        $fila = $sentencia->fetch();
+        return ((int) ($fila['bloqueado'] ?? 0)) === 1;
+    }
+
+    private function liberarBloqueoFactura(PDO $conexion, string $nombre): void
+    {
+        $sentencia = $conexion->prepare('SELECT RELEASE_LOCK(:nombre) AS liberado');
+        $sentencia->execute(['nombre' => $nombre]);
     }
 
     private function crearDetalleCompra(

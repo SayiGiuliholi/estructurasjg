@@ -46,12 +46,16 @@
     }
 
     function limpiarFila(fila) {
+        var codigo = fila.querySelector('.js-salida-codigo');
         var descripcion = fila.querySelector('.js-salida-descripcion');
         var stock = fila.querySelector('.js-salida-stock');
         var cantidad = fila.querySelector('.js-salida-cantidad');
         var precio = fila.querySelector('.js-salida-precio');
         var totalLinea = fila.querySelector('.js-salida-total-linea');
 
+        if (codigo) {
+            codigo.value = '';
+        }
         if (descripcion) {
             descripcion.value = '';
         }
@@ -67,6 +71,9 @@
         }
         if (totalLinea) {
             totalLinea.value = formatearMoneda(0);
+        }
+        if (fila) {
+            fila.dataset.productoBloqueado = '0';
         }
     }
 
@@ -94,6 +101,7 @@
         var filas = cuerpoDetalles.querySelectorAll('tr.detalle-salida');
         var total = 0;
         var hayErrorStock = false;
+        var hayProductoDesactivado = false;
 
         filas.forEach(function (fila) {
             var resultado = recalcularFila(fila);
@@ -101,9 +109,17 @@
             if (!resultado.valida) {
                 hayErrorStock = true;
             }
+            if (fila.dataset.productoBloqueado === '1') {
+                hayProductoDesactivado = true;
+            }
         });
 
         totalFactura.value = formatearMoneda(total);
+
+        if (hayProductoDesactivado) {
+            setMensaje('Hay productos desactivados en la salida. Corrige las lineas antes de guardar.', 'error');
+            return false;
+        }
 
         if (hayErrorStock) {
             setMensaje('La cantidad supera el stock disponible.', 'error');
@@ -137,20 +153,25 @@
 
         fetch(url, { headers: { 'Accept': 'application/json' } })
             .then(function (respuesta) {
-                if (!respuesta.ok) {
-                    throw new Error('No se encontro el producto en la bodega seleccionada.');
-                }
-
-                return respuesta.json();
+                return respuesta.json().then(function (datos) {
+                    if (!respuesta.ok || !datos.ok) {
+                        var mensajeError = (datos && datos.mensaje)
+                            ? datos.mensaje
+                            : 'No se encontro el producto en la bodega seleccionada.';
+                        throw new Error(mensajeError);
+                    }
+                    return datos;
+                });
             })
             .then(function (datos) {
-                if (!datos.ok || !datos.producto) {
-                    throw new Error(datos.mensaje || 'No se pudo cargar el producto.');
+                if (!datos.producto) {
+                    throw new Error('No se pudo cargar el producto.');
                 }
 
                 inputDescripcion.value = datos.producto.descripcion || '';
                 inputStock.value = String(datos.producto.stock_bodega || 0);
                 inputPrecio.value = formatearNumero(datos.producto.precio || 0);
+                fila.dataset.productoBloqueado = '0';
 
                 if (obtenerNumero(inputCantidad.value, 0) <= 0) {
                     inputCantidad.value = '1';
@@ -161,7 +182,11 @@
             })
             .catch(function (error) {
                 limpiarFila(fila);
+                if (String(error.message || '').toLowerCase().indexOf('desactivado') !== -1) {
+                    fila.dataset.productoBloqueado = '1';
+                }
                 setMensaje(error.message || 'No se pudo autocompletar una linea.', 'error');
+                recalcularFactura();
             });
     }
 
@@ -295,16 +320,19 @@
 
     function aplicarFiltros() {
         var termino = normalizar(inputBuscar.value);
+        var esBusquedaCodigo = /^\d+$/.test(termino);
         var bodega = normalizar(selectBodega.value);
         var fechaSeleccionada = fechaInputARegistro(String(inputFecha.value || '').trim());
         var visibles = 0;
 
         filasHistorial.forEach(function (fila) {
             var textoFila = normalizar(fila.textContent || '');
+            var codigoFila = normalizar(fila.getAttribute('data-codigo') || '');
             var bodegaFila = normalizar(fila.getAttribute('data-bodega') || '');
             var fechaFila = String(fila.getAttribute('data-fecha') || '').trim();
 
-            var coincideTexto = termino === '' || textoFila.indexOf(termino) !== -1;
+            var coincideTexto = termino === ''
+                || (esBusquedaCodigo ? codigoFila === termino : textoFila.indexOf(termino) !== -1);
             var coincideBodega = bodega === '' || bodegaFila === bodega;
             var coincideFecha = fechaSeleccionada === '' || fechaFila === fechaSeleccionada;
             var mostrar = coincideTexto && coincideBodega && coincideFecha;

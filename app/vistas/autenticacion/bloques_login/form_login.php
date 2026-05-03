@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $mensajeError = $mensajeError ?? null;
 $accionFormulario = $accionFormulario ?? '';
 $ultimoUsuario = $ultimoUsuario ?? '';
@@ -14,7 +14,7 @@ $urlLogoMarca = $urlLogoMarca ?? '';
                     class="logo-login-imagen"
                 >
             </div>
-            <h1>Iniciar sesion</h1>
+            <h1>Iniciar sesión</h1>
             <p>Accede a tu sistema de inventario</p>
         </div>
 
@@ -50,7 +50,7 @@ $urlLogoMarca = $urlLogoMarca ?? '';
                 </div>
             </div>
 
-            <button type="submit" class="boton-login">Iniciar sesion</button>
+            <button type="submit" class="boton-login">Iniciar sesión</button>
         </form>
     </div>
 </section>

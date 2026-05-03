@@ -6,25 +6,31 @@ require_once __DIR__ . '/../configuracion/rutas.php';
 
 final class ControladorPanel
 {
+    private function permisoActivo(array $permisos, string $clave): bool
+    {
+        return ((int) ($permisos[$clave] ?? 0)) === 1;
+    }
+
     /**
      * Determina si el usuario autenticado puede acceder al modulo solicitado.
      */
     public function puedeAccederAlModulo(string $modulo, array $permisos): bool
     {
         return match ($modulo) {
-            'entradas', 'salidas' => (($permisos['registrar_movimientos'] ?? 0) === 1)
-                || (($permisos['consultar_movimientos'] ?? 0) === 1),
+            'entradas', 'salidas' => $this->permisoActivo($permisos, 'registrar_movimientos')
+                || $this->permisoActivo($permisos, 'consultar_movimientos'),
 
-            'productos' => (($permisos['registrar_productos'] ?? 0) === 1)
-                || (($permisos['modificar_productos'] ?? 0) === 1)
-                || (($permisos['consultar_movimientos'] ?? 0) === 1),
+            'productos' => $this->permisoActivo($permisos, 'registrar_productos')
+                || $this->permisoActivo($permisos, 'modificar_productos')
+                || $this->permisoActivo($permisos, 'consultar_movimientos'),
 
-            'proveedores' => (($permisos['registrar_productos'] ?? 0) === 1)
-                || (($permisos['modificar_productos'] ?? 0) === 1)
-                || (($permisos['configuracion'] ?? 0) === 1),
+            'proveedores' => $this->permisoActivo($permisos, 'registrar_productos')
+                || $this->permisoActivo($permisos, 'modificar_productos')
+                || $this->permisoActivo($permisos, 'consultar_movimientos')
+                || $this->permisoActivo($permisos, 'configuracion'),
 
-            'configuracion' => (($permisos['configuracion'] ?? 0) === 1)
-                || (($permisos['gestionar_roles'] ?? 0) === 1),
+            'configuracion' => $this->permisoActivo($permisos, 'configuracion')
+                || $this->permisoActivo($permisos, 'gestionar_roles'),
 
             default => false,
         };
