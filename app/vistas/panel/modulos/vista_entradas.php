@@ -95,7 +95,6 @@ $paginacion = $paginacion ?? [
                 <div class="campo">
                     <label for="entrada-bodega">Bodega</label>
                     <select id="entrada-bodega" name="id_bodega" required>
-                        <option value="">Selecciona una bodega</option>
                         <?php foreach ($formularioEntrada['bodegas'] as $bodega): ?>
                             <option
                                 value="<?= htmlspecialchars((string) $bodega['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -133,10 +132,10 @@ $paginacion = $paginacion ?? [
                         <?php foreach ($formularioEntrada['detalles'] as $detalle): ?>
                             <tr class="detalle-entrada">
                                 <td>
-                                    <input type="text" name="codigo_producto[]" value="<?= htmlspecialchars($detalle['codigo'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                    <input type="text" name="codigo_producto[]" class="js-entrada-codigo" value="<?= htmlspecialchars($detalle['codigo'], ENT_QUOTES, 'UTF-8') ?>" required>
                                 </td>
                                 <td>
-                                    <input type="text" name="descripcion_producto[]" value="<?= htmlspecialchars($detalle['descripcion'], ENT_QUOTES, 'UTF-8') ?>" required>
+                                    <input type="text" name="descripcion_producto[]" class="js-entrada-descripcion" value="<?= htmlspecialchars($detalle['descripcion'], ENT_QUOTES, 'UTF-8') ?>" required>
                                 </td>
                                 <td>
                                     <input type="number" min="1" name="cantidad_producto[]" class="js-cantidad" value="<?= htmlspecialchars($detalle['cantidad'], ENT_QUOTES, 'UTF-8') ?>" required>

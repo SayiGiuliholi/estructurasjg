@@ -158,37 +158,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (count($codigosNormalizados) !== count(array_unique($codigosNormalizados))) {
                     $mensajeError = 'No se puede repetir el codigo del producto en una misma entrada.';
                 } else {
-                    $codigosExistentes = array_values(array_filter(
-                        $codigosNormalizados,
-                        static fn(string $codigo): bool => $repositorioEntrada->existeProductoPorCodigo($codigo)
-                    ));
+                    try {
+                        $repositorioEntrada->registrarEntradaFactura([
+                            'codigo_factura' => $codigoFactura,
+                            'id_proveedor' => $idProveedor,
+                            'id_bodega' => $idBodega,
+                            'id_usuario' => $idUsuario,
+                        ], array_values($lineasValidas));
 
-                    if (count($codigosExistentes) > 0) {
-                        $mensajeError = 'El codigo de producto ya existe (' . implode(', ', array_unique($codigosExistentes)) . '). No se permiten codigos repetidos.';
-                    } else {
-                        try {
-                            $repositorioEntrada->registrarEntradaFactura([
-                                'codigo_factura' => $codigoFactura,
-                                'id_proveedor' => $idProveedor,
-                                'id_bodega' => $idBodega,
-                                'id_usuario' => $idUsuario,
-                            ], array_values($lineasValidas));
-
-                            $mensajeExito = 'Factura de entrada registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
-                            $formularioEntrada = [
-                                'codigo_factura' => $repositorioEntrada->obtenerSiguienteCodigoFactura(),
-                                'id_proveedor' => '',
-                                'id_bodega' => '',
-                                'detalles' => [[
-                                    'codigo' => '',
-                                    'descripcion' => '',
-                                    'cantidad' => '1',
-                                    'precio' => '0',
-                                ]],
-                            ];
-                        } catch (Throwable $error) {
-                            $mensajeError = $error->getMessage();
-                        }
+                        $mensajeExito = 'Factura de entrada registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
+                        $formularioEntrada = [
+                            'codigo_factura' => $repositorioEntrada->obtenerSiguienteCodigoFactura(),
+                            'id_proveedor' => '',
+                            'id_bodega' => '',
+                            'detalles' => [[
+                                'codigo' => '',
+                                'descripcion' => '',
+                                'cantidad' => '1',
+                                'precio' => '0',
+                            ]],
+                        ];
+                    } catch (Throwable $error) {
+                        $mensajeError = $error->getMessage();
                     }
                 }
             }
@@ -244,6 +235,7 @@ $mensajeExito = $datosModulo['mensajeExito'];
 $mensajeError = $datosModulo['mensajeError'];
 $paginacion = $datosModulo['paginacion'];
 $urlScriptEntradas = construirUrlPublica('js/panel/entradas.js');
+$urlApiProductoEntrada = construirUrlPublica('api/entradas/producto.php');
 
 ob_start();
 require __DIR__ . '/../modulos/vista_entradas.php';
@@ -251,6 +243,9 @@ $contenidoModulo = ob_get_clean();
 
 ob_start();
 ?>
+<script>
+window.URL_API_PRODUCTO_ENTRADA = <?= json_encode($urlApiProductoEntrada, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+</script>
 <script src="<?= htmlspecialchars($urlScriptEntradas, ENT_QUOTES, 'UTF-8') ?>"></script>
 <?php
 $scriptsModulo = ob_get_clean();

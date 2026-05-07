@@ -111,10 +111,13 @@ body {
     margin-bottom: 16px;
     padding: 12px 14px;
     border-radius: 12px;
-    background: var(--error-fondo);
-    border: 1px solid var(--error-borde);
-    color: var(--error-texto);
-    font-size: 0.9rem;
+    background: #fff1f2;
+    border: 1px solid #fda4af;
+    color: #9f1239;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.35;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
 .campo {

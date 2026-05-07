@@ -1,7 +1,9 @@
 (function () {
+    var apiProducto = window.URL_API_PRODUCTO_ENTRADA || '';
     var cuerpoDetalles = document.getElementById('entrada-detalles-body');
     var botonAgregar = document.getElementById('entrada-agregar-linea');
     var totalFactura = document.getElementById('entrada-total-factura');
+    var selectProveedor = document.getElementById('entrada-proveedor');
 
     if (!cuerpoDetalles || !botonAgregar || !totalFactura) {
         return;
@@ -83,8 +85,8 @@
     }
 
     function limpiarFila(fila) {
-        var codigo = fila.querySelector('input[name="codigo_producto[]"]');
-        var descripcion = fila.querySelector('input[name="descripcion_producto[]"]');
+        var codigo = fila.querySelector('.js-entrada-codigo');
+        var descripcion = fila.querySelector('.js-entrada-descripcion');
         var cantidad = fila.querySelector('.js-cantidad');
         var precio = fila.querySelector('.js-precio');
 
@@ -100,6 +102,81 @@
         if (precio) {
             precio.value = '';
         }
+        if (descripcion) {
+            descripcion.readOnly = false;
+        }
+        if (precio) {
+            precio.readOnly = false;
+        }
+    }
+
+    function autocompletarFila(fila) {
+        if (!fila || apiProducto === '') {
+            return;
+        }
+
+        var inputCodigo = fila.querySelector('.js-entrada-codigo');
+        var inputDescripcion = fila.querySelector('.js-entrada-descripcion');
+        var inputPrecio = fila.querySelector('.js-precio');
+        var codigo = inputCodigo ? String(inputCodigo.value || '').trim() : '';
+
+        if (!inputCodigo || !inputDescripcion || !inputPrecio || codigo === '') {
+            if (inputDescripcion) {
+                inputDescripcion.readOnly = false;
+            }
+            if (inputPrecio) {
+                inputPrecio.readOnly = false;
+            }
+            return;
+        }
+
+        var url = apiProducto + '?codigo=' + encodeURIComponent(codigo);
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(function (respuesta) {
+                return respuesta.json().then(function (datos) {
+                    if (!respuesta.ok || !datos.ok) {
+                        throw new Error((datos && datos.mensaje) ? datos.mensaje : 'No se pudo cargar el producto.');
+                    }
+                    return datos;
+                });
+            })
+            .then(function (datos) {
+                if (!datos.producto) {
+                    return;
+                }
+
+                var descripcion = String(datos.producto.descripcion || '').trim();
+                var precio = Number(datos.producto.precio || 0);
+                var idProveedorProducto = String(datos.producto.id_proveedor || '').trim();
+                var descripcionActual = String(inputDescripcion.value || '').trim();
+                var precioActual = Math.max(0, obtenerValorNumero(inputPrecio, 0));
+
+                // Solo autocompleta descripcion si el usuario no ha escrito una.
+                if (descripcion !== '' && descripcionActual === '') {
+                    inputDescripcion.value = descripcion;
+                }
+
+                // Solo autocompleta precio si el usuario no ha digitado uno.
+                if (precio > 0 && precioActual <= 0) {
+                    inputPrecio.value = formatearMoneda(precio);
+                }
+
+                // Para productos existentes solo se permite cambiar cantidad.
+                inputDescripcion.readOnly = true;
+                inputPrecio.readOnly = true;
+
+                if (selectProveedor && idProveedorProducto !== '' && String(selectProveedor.value || '').trim() === '') {
+                    selectProveedor.value = idProveedorProducto;
+                }
+
+                recalcularFactura();
+            })
+            .catch(function () {
+                // Si no existe el codigo, se permite captura manual de descripcion y precio.
+                inputDescripcion.readOnly = false;
+                inputPrecio.readOnly = false;
+            });
     }
 
     function agregarLinea() {
@@ -115,6 +192,7 @@
     }
 
     botonAgregar.addEventListener('click', agregarLinea);
+    var temporizadorCodigo = null;
 
     cuerpoDetalles.addEventListener('click', function (evento) {
         var botonQuitar = evento.target.closest('.js-quitar-linea');
@@ -147,10 +225,34 @@
 
         if (evento.target.matches('.js-cantidad')) {
             recalcularFactura();
+            return;
+        }
+
+        if (evento.target.matches('.js-entrada-codigo')) {
+            var filaCodigo = evento.target.closest('tr.detalle-entrada');
+            if (!filaCodigo) {
+                return;
+            }
+
+            if (temporizadorCodigo) {
+                clearTimeout(temporizadorCodigo);
+            }
+
+            temporizadorCodigo = setTimeout(function () {
+                autocompletarFila(filaCodigo);
+            }, 250);
         }
     });
 
     cuerpoDetalles.addEventListener('blur', function (evento) {
+        if (evento.target.matches('.js-entrada-codigo')) {
+            var filaCodigo = evento.target.closest('tr.detalle-entrada');
+            if (filaCodigo) {
+                autocompletarFila(filaCodigo);
+            }
+            return;
+        }
+
         if (!evento.target.matches('.js-precio')) {
             return;
         }

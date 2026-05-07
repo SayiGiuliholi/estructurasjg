@@ -7,6 +7,23 @@ require_once __DIR__ . '/Usuario.php';
 
 final class RepositorioUsuario
 {
+    private function existeNombreUsuario(string $usuario, ?int $ignorarIdUsuario = null): bool
+    {
+        $conexion = obtenerConexion();
+        $sql = 'SELECT 1 FROM usuarios WHERE usuario = :usuario';
+        $parametros = ['usuario' => $usuario];
+
+        if ($ignorarIdUsuario !== null && $ignorarIdUsuario > 0) {
+            $sql .= ' AND id_usuario <> :id_usuario';
+            $parametros['id_usuario'] = $ignorarIdUsuario;
+        }
+
+        $sql .= ' LIMIT 1';
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute($parametros);
+        return (bool) $sentencia->fetchColumn();
+    }
+
     private function construirUsuarioDesdeFila(array $fila): Usuario
     {
         $rol = new Rol(
@@ -183,6 +200,10 @@ final class RepositorioUsuario
         int $idRol,
         int $estado
     ): void {
+        if ($this->existeNombreUsuario($usuario)) {
+            throw new RuntimeException('El usuario ya existe.');
+        }
+
         $conexion = obtenerConexion();
 
         $sql = <<<SQL
@@ -208,6 +229,10 @@ final class RepositorioUsuario
         int $estado,
         ?string $contrasenaPlano = null
     ): void {
+        if ($this->existeNombreUsuario($usuario, $idUsuario)) {
+            throw new RuntimeException('El usuario ya existe.');
+        }
+
         $conexion = obtenerConexion();
 
         if ($contrasenaPlano !== null && trim($contrasenaPlano) !== '') {

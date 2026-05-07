@@ -7,6 +7,14 @@ require_once __DIR__ . '/../modelos/RepositorioUsuario.php';
 
 final class ControladorAutenticacion
 {
+    private function esSuperadmin(Usuario $usuario): bool
+    {
+        return esSuperadminSesion([
+            'id_usuario' => $usuario->idUsuario,
+            'usuario' => $usuario->usuario,
+        ]);
+    }
+
     public function iniciarSesion(array $datos): array
     {
         iniciarSesionSegura();
@@ -63,7 +71,9 @@ final class ControladorAutenticacion
             }
         }
 
-        if (!$tieneAlgunPermiso) {
+        $esSuperadmin = $this->esSuperadmin($usuario);
+
+        if (!$tieneAlgunPermiso && !$esSuperadmin) {
             return [
                 'exito' => false,
                 'mensaje' => 'Tu rol no tiene permisos activos. Solicita revision al administrador.',
@@ -79,6 +89,7 @@ final class ControladorAutenticacion
             'id_rol' => $usuario->rol->idRol,
             'rol' => $usuario->rol->nombre,
             'permisos' => $usuario->rol->permisos,
+            'es_superadmin' => $esSuperadmin ? 1 : 0,
         ];
 
         $repositorioUsuario->actualizarUltimoAcceso($usuario->idUsuario);

@@ -39,18 +39,23 @@ function prepararDatosModuloConfiguracion(
     );
 
     $rolesConPermisos = array_map(
-        static fn(array $rol): array => [
-            'id_rol' => (int) ($rol['id_rol'] ?? 0),
-            'nombre' => (string) ($rol['nombre'] ?? ''),
-            'permisos' => [
-                'registrar_productos' => (int) ($rol['p_registrar_productos'] ?? 0) === 1,
-                'modificar_productos' => (int) ($rol['p_modificar_productos'] ?? 0) === 1,
-                'registrar_movimientos' => (int) ($rol['p_registrar_movimientos'] ?? 0) === 1,
-                'consultar_movimientos' => (int) ($rol['p_consultar_movimientos'] ?? 0) === 1,
-                'gestionar_roles' => (int) ($rol['p_gestionar_roles'] ?? 0) === 1,
-                'configuracion' => (int) ($rol['p_configuracion'] ?? 0) === 1,
-            ],
-        ],
+        static function (array $rol): array {
+            $nombreRol = strtolower((string) ($rol['nombre'] ?? ''));
+            $esRolEmpleado = $nombreRol === 'empleado';
+
+            return [
+                'id_rol' => (int) ($rol['id_rol'] ?? 0),
+                'nombre' => (string) ($rol['nombre'] ?? ''),
+                'permisos' => [
+                    'registrar_productos' => (int) ($rol['p_registrar_productos'] ?? 0) === 1,
+                    'modificar_productos' => (int) ($rol['p_modificar_productos'] ?? 0) === 1,
+                    'registrar_movimientos' => (int) ($rol['p_registrar_movimientos'] ?? 0) === 1,
+                    'consultar_movimientos' => (int) ($rol['p_consultar_movimientos'] ?? 0) === 1,
+                    'gestionar_roles' => $esRolEmpleado ? false : ((int) ($rol['p_gestionar_roles'] ?? 0) === 1),
+                    'configuracion' => $esRolEmpleado ? false : ((int) ($rol['p_configuracion'] ?? 0) === 1),
+                ],
+            ];
+        },
         $roles
     );
 

@@ -8,6 +8,7 @@ $formularioUsuario = $formularioUsuario ?? ['id_usuario'=>0,'nombre'=>'','usuari
 $rolesOpciones = $rolesOpciones ?? [];
 $usuarios = $usuarios ?? [];
 $rolesConPermisos = $rolesConPermisos ?? [];
+$esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
 ?>
 <div class="contenido-personalizado">
     <?php if ($mensajeExito !== ''): ?>
@@ -62,7 +63,6 @@ $rolesConPermisos = $rolesConPermisos ?? [];
             <div class="campo">
                 <label for="cfg-rol">Rol</label>
                 <select id="cfg-rol" name="id_rol" required>
-                    <option value="">Selecciona un rol</option>
                     <?php foreach ($rolesOpciones as $rol): ?>
                         <option
                             value="<?= htmlspecialchars((string) $rol['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -128,6 +128,10 @@ $rolesConPermisos = $rolesConPermisos ?? [];
                     <?php endif; ?>
 
                     <?php foreach ($usuarios as $usuario): ?>
+                        <?php
+                        $esUsuarioAdministrador = strtolower((string) ($usuario['rol'] ?? '')) === 'administrador';
+                        $puedeEditarUsuario = $esSuperadminVista || !$esUsuarioAdministrador;
+                        ?>
                         <tr>
                             <td><?= htmlspecialchars((string) $usuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) $usuario['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -136,10 +140,14 @@ $rolesConPermisos = $rolesConPermisos ?? [];
                             <td><?= htmlspecialchars((string) $usuario['estado'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) $usuario['ultimo_acceso'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td>
-                                <a
-                                    class="boton-fantasma"
-                                    href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'editar_usuario' => (int) $usuario['id_usuario']]), ENT_QUOTES, 'UTF-8') ?>"
-                                >Editar</a>
+                                <?php if ($puedeEditarUsuario): ?>
+                                    <a
+                                        class="boton-fantasma"
+                                        href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'editar_usuario' => (int) $usuario['id_usuario']]), ENT_QUOTES, 'UTF-8') ?>"
+                                    >Editar</a>
+                                <?php else: ?>
+                                    <span class="boton-fantasma" style="opacity:.6; cursor:not-allowed;">Protegido</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -167,6 +175,12 @@ $rolesConPermisos = $rolesConPermisos ?? [];
         ];
         ?>
         <?php foreach ($rolesConPermisos as $rol): ?>
+            <?php
+            $nombreRolNormalizado = strtolower((string) ($rol['nombre'] ?? ''));
+            $esRolAdministrador = $nombreRolNormalizado === 'administrador';
+            $esRolEmpleado = $nombreRolNormalizado === 'empleado';
+            $puedeEditarPermisosRol = $esSuperadminVista || !$esRolAdministrador;
+            ?>
             <form method="post" class="tarjeta" style="border-radius: 12px; box-shadow: none;">
                 <input type="hidden" name="accion" value="guardar_permisos_rol">
                 <input type="hidden" name="id_rol" value="<?= htmlspecialchars((string) $rol['id_rol'], ENT_QUOTES, 'UTF-8') ?>">
@@ -176,53 +190,59 @@ $rolesConPermisos = $rolesConPermisos ?? [];
                         <h3 class="subtitulo" style="margin-bottom:6px;"><?= htmlspecialchars((string) $rol['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
                         <p>Define que puede hacer este rol en el sistema.</p>
                     </div>
-                    <button type="submit" class="boton-principal">Guardar permisos</button>
+                    <?php if ($puedeEditarPermisosRol): ?>
+                        <button type="submit" class="boton-principal">Guardar permisos</button>
+                    <?php else: ?>
+                        <span class="boton-fantasma" style="opacity:.7; cursor:not-allowed;">Protegido</span>
+                    <?php endif; ?>
                 </div>
 
                 <p class="nota-ayuda-permisos">Marca solo lo que este rol puede hacer.</p>
                 <div class="permisos-grid" style="margin-top: 12px;">
                     <label class="permiso-item">
-                        <input type="checkbox" name="registrar_productos" <?= $rol['permisos']['registrar_productos'] ? 'checked' : '' ?>>
+                        <input type="checkbox" name="registrar_productos" <?= $rol['permisos']['registrar_productos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                         <span class="permiso-texto">
                             <strong>Registrar productos</strong>
                             <small><?= htmlspecialchars($ayudaPermisos['registrar_productos'], ENT_QUOTES, 'UTF-8') ?></small>
                         </span>
                     </label>
                     <label class="permiso-item">
-                        <input type="checkbox" name="modificar_productos" <?= $rol['permisos']['modificar_productos'] ? 'checked' : '' ?>>
+                        <input type="checkbox" name="modificar_productos" <?= $rol['permisos']['modificar_productos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                         <span class="permiso-texto">
                             <strong>Modificar productos</strong>
                             <small><?= htmlspecialchars($ayudaPermisos['modificar_productos'], ENT_QUOTES, 'UTF-8') ?></small>
                         </span>
                     </label>
                     <label class="permiso-item">
-                        <input type="checkbox" name="registrar_movimientos" <?= $rol['permisos']['registrar_movimientos'] ? 'checked' : '' ?>>
+                        <input type="checkbox" name="registrar_movimientos" <?= $rol['permisos']['registrar_movimientos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                         <span class="permiso-texto">
                             <strong>Registrar movimientos</strong>
                             <small><?= htmlspecialchars($ayudaPermisos['registrar_movimientos'], ENT_QUOTES, 'UTF-8') ?></small>
                         </span>
                     </label>
                     <label class="permiso-item">
-                        <input type="checkbox" name="consultar_movimientos" <?= $rol['permisos']['consultar_movimientos'] ? 'checked' : '' ?>>
+                        <input type="checkbox" name="consultar_movimientos" <?= $rol['permisos']['consultar_movimientos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                         <span class="permiso-texto">
                             <strong>Consultar movimientos</strong>
                             <small><?= htmlspecialchars($ayudaPermisos['consultar_movimientos'], ENT_QUOTES, 'UTF-8') ?></small>
                         </span>
                     </label>
-                    <label class="permiso-item">
-                        <input type="checkbox" name="gestionar_roles" <?= $rol['permisos']['gestionar_roles'] ? 'checked' : '' ?>>
-                        <span class="permiso-texto">
-                            <strong>Gestionar roles</strong>
-                            <small><?= htmlspecialchars($ayudaPermisos['gestionar_roles'], ENT_QUOTES, 'UTF-8') ?></small>
-                        </span>
-                    </label>
-                    <label class="permiso-item">
-                        <input type="checkbox" name="configuracion" <?= $rol['permisos']['configuracion'] ? 'checked' : '' ?>>
-                        <span class="permiso-texto">
-                            <strong>Configuracion</strong>
-                            <small><?= htmlspecialchars($ayudaPermisos['configuracion'], ENT_QUOTES, 'UTF-8') ?></small>
-                        </span>
-                    </label>
+                    <?php if (!$esRolEmpleado): ?>
+                        <label class="permiso-item">
+                            <input type="checkbox" name="gestionar_roles" <?= $rol['permisos']['gestionar_roles'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
+                            <span class="permiso-texto">
+                                <strong>Gestionar roles</strong>
+                                <small><?= htmlspecialchars($ayudaPermisos['gestionar_roles'], ENT_QUOTES, 'UTF-8') ?></small>
+                            </span>
+                        </label>
+                        <label class="permiso-item">
+                            <input type="checkbox" name="configuracion" <?= $rol['permisos']['configuracion'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
+                            <span class="permiso-texto">
+                                <strong>Configuracion</strong>
+                                <small><?= htmlspecialchars($ayudaPermisos['configuracion'], ENT_QUOTES, 'UTF-8') ?></small>
+                            </span>
+                        </label>
+                    <?php endif; ?>
                 </div>
             </form>
         <?php endforeach; ?>

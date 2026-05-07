@@ -9,6 +9,23 @@ final class RepositorioProducto
 {
     private ?bool $columnaEstadoDisponible = null;
 
+    private function existeCodigo(string $codigo, ?int $ignorarIdProducto = null): bool
+    {
+        $conexion = obtenerConexion();
+        $sql = 'SELECT 1 FROM productos WHERE codigo = :codigo';
+        $parametros = ['codigo' => $codigo];
+
+        if ($ignorarIdProducto !== null && $ignorarIdProducto > 0) {
+            $sql .= ' AND id_producto <> :id_producto';
+            $parametros['id_producto'] = $ignorarIdProducto;
+        }
+
+        $sql .= ' LIMIT 1';
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute($parametros);
+        return (bool) $sentencia->fetchColumn();
+    }
+
     public function obtenerTodos(): array
     {
         return $this->obtenerPaginado(1000000, 0);
@@ -161,6 +178,10 @@ final class RepositorioProducto
 
     public function crear(array $datos): int
     {
+        if ($this->existeCodigo((string) ($datos['codigo'] ?? ''))) {
+            throw new RuntimeException('El codigo del producto ya existe.');
+        }
+
         $conexion = obtenerConexion();
 
         $sql = <<<SQL
@@ -182,6 +203,10 @@ final class RepositorioProducto
 
     public function actualizar(int $idProducto, array $datos): void
     {
+        if ($this->existeCodigo((string) ($datos['codigo'] ?? ''), $idProducto)) {
+            throw new RuntimeException('El codigo del producto ya existe.');
+        }
+
         $conexion = obtenerConexion();
 
         $sql = <<<SQL

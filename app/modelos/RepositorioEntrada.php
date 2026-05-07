@@ -41,6 +41,53 @@ final class RepositorioEntrada
         return (bool) $sentencia->fetchColumn();
     }
 
+    public function obtenerProductoParaFormulario(string $codigoProducto): ?array
+    {
+        $codigo = trim($codigoProducto);
+        if ($codigo === '') {
+            return null;
+        }
+
+        $conexion = obtenerConexion();
+        $filtroEstado = $this->tieneColumnaEstado() ? ' AND p.estado = 1 ' : '';
+
+        $sql = <<<SQL
+            SELECT
+                p.id_producto,
+                p.codigo,
+                p.descripcion,
+                p.precio,
+                p.id_proveedor,
+                pr.nombre AS proveedor
+            FROM productos p
+            INNER JOIN proveedores pr ON pr.id_proveedor = p.id_proveedor
+            WHERE p.codigo = :codigo
+            {$filtroEstado}
+            LIMIT 1
+        SQL;
+
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['codigo' => $codigo]);
+        $fila = $sentencia->fetch();
+
+        return $fila ?: null;
+    }
+
+    public function esProductoDesactivadoPorCodigo(string $codigoProducto): bool
+    {
+        $codigo = trim($codigoProducto);
+        if ($codigo === '' || !$this->tieneColumnaEstado()) {
+            return false;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = 'SELECT 1 FROM productos WHERE codigo = :codigo AND estado = 0 LIMIT 1';
+        $sentencia = $conexion->prepare($sql);
+        $sentencia->execute(['codigo' => $codigo]);
+
+        return (bool) $sentencia->fetchColumn();
+    }
+
     public function obtenerSiguienteCodigoFactura(): string
     {
         $conexion = obtenerConexion();
@@ -158,7 +205,14 @@ final class RepositorioEntrada
             $resumen['valor_hoy'] = (float) $filaMovimientos['valor_hoy'];
         }
 
-        $sqlProveedores = 'SELECT COUNT(*) AS total FROM proveedores';
+        $filtroEstadoProductos = $this->tieneColumnaEstado() ? ' AND p.estado = 1' : '';
+        $sqlProveedores = <<<SQL
+            SELECT COUNT(DISTINCT pr.id_proveedor) AS total
+            FROM proveedores pr
+            INNER JOIN productos p ON p.id_proveedor = pr.id_proveedor
+            WHERE 1 = 1
+            {$filtroEstadoProductos}
+        SQL;
         $filaProveedores = $conexion->query($sqlProveedores)->fetch();
         if ($filaProveedores) {
             $resumen['proveedores_activos'] = (int) $filaProveedores['total'];
@@ -174,13 +228,14 @@ final class RepositorioEntrada
         $sql = <<<SQL
             SELECT
                 c.codigo AS codigo_compra,
-                c.cantidad,
-                c.precio,
-                c.total,
+                dc.cantidad,
+                dc.costo_unitario AS precio,
+                (dc.cantidad * dc.costo_unitario) AS total_linea,
                 c.fecha,
                 p.codigo AS codigo_producto,
                 p.descripcion,
                 p.stock,
+                COALESCE(sb.stock_actual, p.stock) AS stock_bodega,
                 pr.nombre AS proveedor,
                 b.nombre AS bodega
             FROM compras c
@@ -188,6 +243,7 @@ final class RepositorioEntrada
             INNER JOIN productos p ON p.id_producto = dc.id_producto
             INNER JOIN proveedores pr ON pr.id_proveedor = c.id_proveedor
             INNER JOIN bodegas b ON b.id_bodega = c.id_bodega
+            LEFT JOIN stock_bodega sb ON sb.id_producto = p.id_producto AND sb.id_bodega = c.id_bodega
             ORDER BY c.id_compra DESC
             LIMIT 1
         SQL;
@@ -206,12 +262,13 @@ final class RepositorioEntrada
                 c.id_compra,
                 c.codigo AS codigo_compra,
                 c.fecha,
-                c.cantidad,
-                c.precio,
-                c.total,
+                dc.cantidad,
+                dc.costo_unitario AS precio,
+                (dc.cantidad * dc.costo_unitario) AS total_linea,
                 p.codigo AS codigo_producto,
                 p.descripcion,
                 p.stock,
+                COALESCE(sb.stock_actual, p.stock) AS stock_bodega,
                 pr.nombre AS proveedor,
                 b.nombre AS bodega
             FROM compras c
@@ -219,6 +276,7 @@ final class RepositorioEntrada
             INNER JOIN productos p ON p.id_producto = dc.id_producto
             INNER JOIN proveedores pr ON pr.id_proveedor = c.id_proveedor
             INNER JOIN bodegas b ON b.id_bodega = c.id_bodega
+            LEFT JOIN stock_bodega sb ON sb.id_producto = p.id_producto AND sb.id_bodega = c.id_bodega
             ORDER BY c.id_compra DESC
             LIMIT :limite OFFSET :offset
         SQL;
@@ -260,23 +318,6 @@ final class RepositorioEntrada
                     'El codigo "' . ((string) ($datos['codigo'] ?? '')) . '" esta desactivado y no puede registrarse.'
                 );
             }
-
-            $sqlActualizar = <<<SQL
-                UPDATE productos
-                SET
-                    descripcion = :descripcion,
-                    id_proveedor = :id_proveedor,
-                    precio = :precio
-                WHERE id_producto = :id_producto
-            SQL;
-
-            $sentenciaActualizar = $conexion->prepare($sqlActualizar);
-            $sentenciaActualizar->execute([
-                'id_producto' => $idProducto,
-                'descripcion' => $datos['descripcion'],
-                'id_proveedor' => $datos['id_proveedor'],
-                'precio' => $datos['precio'],
-            ]);
 
             return $idProducto;
         }

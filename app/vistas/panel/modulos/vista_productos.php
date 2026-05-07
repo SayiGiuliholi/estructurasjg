@@ -12,7 +12,6 @@
     <div class="cabecera-modulo">
         <div>
             <h3 class="subtitulo">Edicion de producto</h3>
-            <p>Actualiza datos o cambia el estado del producto seleccionado.</p>
         </div>
     </div>
 
@@ -51,13 +50,13 @@
             </div>
             <div class="campo">
                 <label for="prod-stock-editar">Stock</label>
-                <input id="prod-stock-editar" name="stock" type="number" min="0" required value="<?= htmlspecialchars((string) ($fichaProducto['stock'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+                <input id="prod-stock-editar" name="stock" type="number" min="0" value="<?= htmlspecialchars((string) ($fichaProducto['stock'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" readonly>
             </div>
             <div class="campo">
                 <label for="prod-precio-editar">Precio</label>
                 <input id="prod-precio-editar" name="precio" type="text" inputmode="numeric" required value="<?= htmlspecialchars((string) ($fichaProducto['precio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             </div>
-            <div class="fila-acciones campo-amplio">
+            <div class="fila-acciones campo campo-acciones">
                 <button type="submit" name="accion" value="actualizar" class="boton-principal">Guardar cambios</button>
             </div>
         </form>

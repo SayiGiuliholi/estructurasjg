@@ -80,7 +80,6 @@ $paginacion = $paginacion ?? [
                 <div class="campo">
                     <label for="salida-bodega">Bodega</label>
                     <select id="salida-bodega" name="id_bodega" required>
-                        <option value="">Selecciona una bodega</option>
                         <?php foreach ($formularioSalida['bodegas'] as $bodega): ?>
                             <option
                                 value="<?= htmlspecialchars((string) $bodega['id'], ENT_QUOTES, 'UTF-8') ?>"
@@ -172,7 +171,6 @@ $paginacion = $paginacion ?? [
             <div class="fila-acciones">
                 <?php if (!isset($puedeRegistrarMovimientos) || $puedeRegistrarMovimientos): ?>
                     <button type="submit" form="form-salidas" class="boton-principal">Registrar salida</button>
-                    <button type="reset" class="boton-fantasma">Cancelar</button>
                 <?php endif; ?>
             </div>
         </section>

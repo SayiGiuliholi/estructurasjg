@@ -106,7 +106,7 @@ function prepararDatosModuloEntradas(array $contexto = []): array
 
     $historialEntradas = array_map(
         static function (array $fila) use ($formatearMoneda): array {
-            $stock = (int) ($fila['stock'] ?? 0);
+            $stock = (int) ($fila['stock_bodega'] ?? $fila['stock'] ?? 0);
             $marcaTiempo = strtotime((string) ($fila['fecha'] ?? ''));
 
             if ($marcaTiempo === false) {
@@ -129,7 +129,7 @@ function prepararDatosModuloEntradas(array $contexto = []): array
                 'precio' => $formatearMoneda((float) ($fila['precio'] ?? 0)),
                 'proveedor' => (string) ($fila['proveedor'] ?? ''),
                 'bodega' => (string) ($fila['bodega'] ?? 'Sin bodega'),
-                'total' => $formatearMoneda((float) ($fila['total'] ?? 0)),
+                'total' => $formatearMoneda((float) ($fila['total_linea'] ?? $fila['total'] ?? 0)),
                 'stock' => (string) $stock . ' und',
                 'estado' => $stock <= 10 ? 'alerta' : 'ok',
                 'hora_registro' => $horaRegistro,

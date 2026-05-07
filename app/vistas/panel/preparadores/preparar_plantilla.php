@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+require_once __DIR__ . '/../../../ayudantes/sesion.php';
 
 /**
  * Construye los datos base que necesita la plantilla principal del panel.
@@ -14,6 +15,10 @@ function prepararDatosPlantillaPanel(
     array $datosVista = []
 ): array {
     $permisosActivos = static fn(string $clave): bool => ((int) ($permisos[$clave] ?? 0)) === 1;
+    $esSuperadmin = esSuperadminSesion($autenticacion);
+    $esAdministrador = $esSuperadmin
+        || strtolower((string) ($autenticacion['rol'] ?? '')) === 'administrador'
+        || (int) ($autenticacion['id_rol'] ?? 0) === 1;
 
     $itemsMenuBase = [
         'entradas' => 'Entradas',
@@ -22,7 +27,11 @@ function prepararDatosPlantillaPanel(
         'salidas' => 'Salidas',
     ];
 
-    $puedeAcceder = static function (string $modulo) use ($permisosActivos): bool {
+    $puedeAcceder = static function (string $modulo) use ($permisosActivos, $esSuperadmin): bool {
+        if ($esSuperadmin) {
+            return true;
+        }
+
         return match ($modulo) {
             'entradas', 'salidas' => $permisosActivos('registrar_movimientos') || $permisosActivos('consultar_movimientos'),
             'productos' => $permisosActivos('registrar_productos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos'),
@@ -47,9 +56,10 @@ function prepararDatosPlantillaPanel(
         'contenidoModulo' => $datosVista['contenidoModulo'] ?? '',
         'scriptsModulo' => $datosVista['scriptsModulo'] ?? '',
         'itemsMenu' => $itemsMenu,
-        'puedeVerConfiguracion' => $permisosActivos('configuracion') || $permisosActivos('gestionar_roles'),
+        'puedeVerConfiguracion' => $esAdministrador,
         'nombreUsuario' => $autenticacion['nombre'] ?? '',
         'usuarioAcceso' => $autenticacion['usuario'] ?? '',
         'nombreRol' => $autenticacion['rol'] ?? '',
+        'esSuperadmin' => $esSuperadmin,
     ];
 }

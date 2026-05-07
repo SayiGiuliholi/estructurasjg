@@ -58,34 +58,48 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $codigo = trim((string) ($_POST['codigo'] ?? ''));
         $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
         $idProveedor = (int) ($_POST['id_proveedor'] ?? 0);
-        $stock = (int) ($_POST['stock'] ?? 0);
         $precioLimpio = preg_replace('/[^\d]/', '', (string) ($_POST['precio'] ?? ''));
         $precio = (float) $precioLimpio;
-
-        if ($codigo === '' || $descripcion === '' || $idProveedor <= 0 || $stock < 0 || $precio < 0) {
-            $mensajeError = 'Completa todos los campos de edicion correctamente.';
-            $idProductoEdicion = $idProducto;
+        $productoActual = $repositorioProducto->buscarPorId($idProducto);
+        if ($productoActual === null) {
+            $mensajeError = 'No se encontro el producto para actualizar.';
+            $idProductoEdicion = null;
             $fichaProducto = [
-                'id_producto' => $idProducto,
-                'codigo' => $codigo,
-                'descripcion' => $descripcion,
-                'id_proveedor' => (string) $idProveedor,
-                'stock' => (string) max(0, $stock),
-                'precio' => (string) ($_POST['precio'] ?? ''),
+                'id_producto' => null,
+                'codigo' => '',
+                'descripcion' => '',
+                'id_proveedor' => '',
+                'stock' => '',
+                'precio' => '',
             ];
         } else {
-            try {
-                $repositorioProducto->actualizar($idProducto, [
+            $stock = $productoActual->stock;
+
+            if ($codigo === '' || $descripcion === '' || $idProveedor <= 0 || $precio < 0) {
+                $mensajeError = 'Completa todos los campos de edicion correctamente.';
+                $idProductoEdicion = $idProducto;
+                $fichaProducto = [
+                    'id_producto' => $idProducto,
                     'codigo' => $codigo,
                     'descripcion' => $descripcion,
-                    'id_proveedor' => $idProveedor,
-                    'stock' => $stock,
-                    'precio' => $precio,
-                ]);
-                $mensajeExito = 'Producto actualizado correctamente.';
-            } catch (Throwable $error) {
-                $mensajeError = 'No se pudo actualizar el producto. Verifica que el codigo no este repetido.';
-                $idProductoEdicion = $idProducto;
+                    'id_proveedor' => (string) $idProveedor,
+                    'stock' => (string) $stock,
+                    'precio' => (string) ($_POST['precio'] ?? ''),
+                ];
+            } else {
+                try {
+                    $repositorioProducto->actualizar($idProducto, [
+                        'codigo' => $codigo,
+                        'descripcion' => $descripcion,
+                        'id_proveedor' => $idProveedor,
+                        'stock' => $stock,
+                        'precio' => $precio,
+                    ]);
+                    $mensajeExito = 'Producto actualizado correctamente.';
+                } catch (Throwable $error) {
+                    $mensajeError = 'No se pudo actualizar el producto. Verifica que el codigo no este repetido.';
+                    $idProductoEdicion = $idProducto;
+                }
             }
         }
     }

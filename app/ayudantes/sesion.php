@@ -29,3 +29,20 @@ function usuarioAutenticado(): bool
 
     return isset($_SESSION['autenticacion']['id_usuario']);
 }
+
+/**
+ * Determina si la sesion actual corresponde al superadmin protegido.
+ * Se conserva compatibilidad con sesiones antiguas y nuevos inicios.
+ */
+function esSuperadminSesion(?array $autenticacion = null): bool
+{
+    iniciarSesionSegura();
+    $datos = $autenticacion ?? ($_SESSION['autenticacion'] ?? []);
+
+    if ((int) ($datos['es_superadmin'] ?? 0) === 1) {
+        return true;
+    }
+
+    return (int) ($datos['id_usuario'] ?? 0) === 1
+        || strtolower((string) ($datos['usuario'] ?? '')) === 'admin';
+}

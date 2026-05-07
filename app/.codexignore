@@ -1,0 +1,19 @@
+vendor/
+node_modules/
+.git/
+tmp/
+cache/
+sessions/
+*.log
+*.zip
+*.mp4
+*.png
+*.jpg
+*.jpeg
+
+
+# XAMPP: ignorar cosas pesadas, pero NO todo XAMPP
+xampp/mysql/data/
+xampp/apache/logs/
+xampp/tmp/
+xampp/phpMyAdmin/tmp/
