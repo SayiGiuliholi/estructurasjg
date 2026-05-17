@@ -1,3 +1,31 @@
+<?php
+declare(strict_types=1);
+
+$resumenIndicadores = $resumenIndicadores ?? [];
+$puedeGestionProductos = $puedeGestionProductos ?? false;
+$mensajeExito = $mensajeExito ?? '';
+$mensajeError = $mensajeError ?? '';
+$idProductoEdicion = $idProductoEdicion ?? null;
+$fichaProducto = $fichaProducto ?? [
+    'id_producto' => null,
+    'codigo' => '',
+    'descripcion' => '',
+    'id_proveedor' => '',
+    'stock' => '',
+    'precio' => '',
+];
+$directorioProveedores = $directorioProveedores ?? [];
+$catalogoProductos = $catalogoProductos ?? [];
+$catalogoPrincipal = $catalogoPrincipal ?? [];
+$catalogoSecundaria = $catalogoSecundaria ?? [];
+$paginacion = $paginacion ?? [
+    'paginaActual' => 1,
+    'totalPaginas' => 1,
+    'totalRegistros' => 0,
+    'porPagina' => 20,
+    'opcionesPorPagina' => [10, 20, 50],
+];
+?>
 <div class="resumen-kpis">
     <?php foreach ($resumenIndicadores as $indicador): ?>
         <article class="kpi">
@@ -25,6 +53,7 @@
 
     <?php if (($idProductoEdicion ?? null) !== null): ?>
         <form class="formulario-grid" method="post">
+            <?= csrfCampoOculto() ?>
             <input type="hidden" name="id_producto" value="<?= htmlspecialchars((string) ($fichaProducto['id_producto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             <div class="campo">
                 <label for="prod-codigo-editar">Codigo</label>
@@ -177,10 +206,12 @@
                                     <td>
                                         <div class="acciones-tabla">
                                             <form method="post" class="form-accion-tabla">
+                                                <?= csrfCampoOculto() ?>
                                                 <input type="hidden" name="id_producto" value="<?= htmlspecialchars((string) $producto['id_producto'], ENT_QUOTES, 'UTF-8') ?>">
                                                 <button type="submit" name="accion" value="cargar" class="boton-fantasma">Editar</button>
                                             </form>
                                             <form method="post" class="form-accion-tabla">
+                                                <?= csrfCampoOculto() ?>
                                                 <input type="hidden" name="id_producto" value="<?= htmlspecialchars((string) $producto['id_producto'], ENT_QUOTES, 'UTF-8') ?>">
                                                 <button type="submit" name="accion" value="<?= ($producto['activo'] ?? true) ? 'desactivar' : 'activar' ?>" class="<?= ($producto['activo'] ?? true) ? 'boton-peligro' : 'boton-principal' ?>">
                                                     <?= ($producto['activo'] ?? true) ? 'Desactivar' : 'Activar' ?>

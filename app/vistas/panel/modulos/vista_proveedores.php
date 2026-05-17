@@ -1,3 +1,19 @@
+<?php
+declare(strict_types=1);
+
+$puedeGestionProveedores = $puedeGestionProveedores ?? false;
+$mensajeExito = $mensajeExito ?? '';
+$mensajeError = $mensajeError ?? '';
+$idProveedorEdicion = $idProveedorEdicion ?? null;
+$fichaProveedor = $fichaProveedor ?? [
+    'id_proveedor' => null,
+    'ruc' => '',
+    'nombre' => '',
+    'telefono' => '',
+    'direccion' => '',
+];
+$directorioProveedores = $directorioProveedores ?? [];
+?>
 <?php if (!isset($puedeGestionProveedores) || $puedeGestionProveedores): ?>
 <article class="tarjeta bloque">
     <div class="cabecera-modulo">
@@ -15,6 +31,7 @@
     <?php endif; ?>
 
     <form class="formulario-grid" method="post">
+        <?= csrfCampoOculto() ?>
         <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) ($fichaProveedor['id_proveedor'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
         <div class="campo">
             <label for="prov-ruc">NIT</label>
@@ -86,10 +103,12 @@
                             <td>
                                 <div class="acciones-tabla">
                                     <form method="post" class="form-accion-tabla">
+                                        <?= csrfCampoOculto() ?>
                                         <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
                                         <button type="submit" name="accion" value="cargar" class="boton-fantasma">Editar</button>
                                     </form>
                                     <form method="post" class="form-accion-tabla">
+                                        <?= csrfCampoOculto() ?>
                                         <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
                                         <button type="submit" name="accion" value="eliminar" class="boton-peligro">Eliminar</button>
                                     </form>

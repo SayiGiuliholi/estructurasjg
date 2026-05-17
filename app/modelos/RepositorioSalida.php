@@ -3,14 +3,28 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../configuracion/conexion.php';
+require_once __DIR__ . '/ServicioConsecutivosFactura.php';
+require_once __DIR__ . '/ServicioStockBodega.php';
+require_once __DIR__ . '/ServicioConsultaSalidas.php';
 
 final class RepositorioSalida
 {
+    // Soporte y servicios compartidos
     private ?bool $columnaEstadoDisponible = null;
     private ?bool $soporteTrasladoDisponible = null;
+    private ServicioConsecutivosFactura $servicioConsecutivos;
+    private ServicioStockBodega $servicioStockBodega;
+    private ServicioConsultaSalidas $servicioConsultaSalidas;
     private const PREFIJO_FACTURA = 'FAC-2026-';
     private const RANGO_INICIO = 5000;
     private const RANGO_FIN = 9999;
+
+    public function __construct()
+    {
+        $this->servicioConsecutivos = new ServicioConsecutivosFactura();
+        $this->servicioStockBodega = new ServicioStockBodega();
+        $this->servicioConsultaSalidas = new ServicioConsultaSalidas();
+    }
 
     public function registrarSalida(array $datos): void
     {
@@ -33,7 +47,13 @@ final class RepositorioSalida
     public function obtenerSiguienteCodigoFactura(): string
     {
         $conexion = obtenerConexion();
-        $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'ventas', self::RANGO_INICIO, self::RANGO_FIN);
+        $numero = $this->servicioConsecutivos->obtenerSiguienteNumeroFactura(
+            $conexion,
+            self::PREFIJO_FACTURA,
+            'ventas',
+            self::RANGO_INICIO,
+            self::RANGO_FIN
+        );
         return self::PREFIJO_FACTURA . $numero;
     }
 
@@ -215,87 +235,17 @@ final class RepositorioSalida
 
     public function obtenerResumenIndicadores(): array
     {
-        $conexion = obtenerConexion();
-
-        $resumen = [
-            'ventas_hoy' => 0,
-            'unidades_hoy' => 0,
-            'ingresos_hoy' => 0.0,
-            'alertas_stock' => 0,
-        ];
-
-        $sqlVentasHoy = <<<SQL
-            SELECT
-                COUNT(DISTINCT v.id_venta) AS ventas_hoy,
-                COALESCE(SUM(dv.cantidad), 0) AS unidades_hoy,
-                COALESCE(SUM(dv.cantidad * dv.precio_unitario), 0) AS ingresos_hoy
-            FROM ventas v
-            INNER JOIN detalle_ventas dv ON dv.id_venta = v.id_venta
-            WHERE DATE(v.fecha) = CURRENT_DATE()
-        SQL;
-
-        $filaVentas = $conexion->query($sqlVentasHoy)->fetch();
-        if ($filaVentas) {
-            $resumen['ventas_hoy'] = (int) $filaVentas['ventas_hoy'];
-            $resumen['unidades_hoy'] = (int) $filaVentas['unidades_hoy'];
-            $resumen['ingresos_hoy'] = (float) $filaVentas['ingresos_hoy'];
-        }
-
-        $sqlAlertas = 'SELECT COUNT(*) AS total FROM productos WHERE stock <= 10';
-        $filaAlertas = $conexion->query($sqlAlertas)->fetch();
-        if ($filaAlertas) {
-            $resumen['alertas_stock'] = (int) $filaAlertas['total'];
-        }
-
-        return $resumen;
+        return $this->servicioConsultaSalidas->obtenerResumenIndicadores();
     }
 
     public function obtenerHistorial(int $limite = 20, int $offset = 0): array
     {
-        $conexion = obtenerConexion();
-
-        $sql = <<<SQL
-            SELECT
-                v.id_venta,
-                v.codigo AS factura,
-                v.motivo_salida,
-                v.descripcion AS descripcion_movimiento,
-                v.fecha,
-                dv.cantidad,
-                p.codigo AS codigo_producto,
-                p.descripcion AS producto,
-                p.stock AS stock_actual,
-                dv.precio_unitario,
-                (dv.cantidad * dv.precio_unitario) AS total,
-                b.nombre AS bodega
-            FROM ventas v
-            INNER JOIN detalle_ventas dv ON dv.id_venta = v.id_venta
-            INNER JOIN productos p ON p.id_producto = dv.id_producto
-            INNER JOIN bodegas b ON b.id_bodega = v.id_bodega
-            ORDER BY v.id_venta DESC
-            LIMIT :limite OFFSET :offset
-        SQL;
-
-        $sentencia = $conexion->prepare($sql);
-        $sentencia->bindValue('limite', $limite, PDO::PARAM_INT);
-        $sentencia->bindValue('offset', $offset, PDO::PARAM_INT);
-        $sentencia->execute();
-
-        return $sentencia->fetchAll();
+        return $this->servicioConsultaSalidas->obtenerHistorial($limite, $offset);
     }
 
     public function contarHistorial(): int
     {
-        $conexion = obtenerConexion();
-
-        $sql = <<<SQL
-            SELECT COUNT(*) AS total
-            FROM ventas v
-            INNER JOIN detalle_ventas dv ON dv.id_venta = v.id_venta
-        SQL;
-
-        $fila = $conexion->query($sql)->fetch();
-        return (int) ($fila['total'] ?? 0);
+        return $this->servicioConsultaSalidas->contarHistorial();
     }
 
     private function buscarProductoPorCodigoParaActualizar(PDO $conexion, string $codigo): ?array
@@ -359,37 +309,28 @@ final class RepositorioSalida
 
     private function obtenerStockBodegaParaActualizar(PDO $conexion, int $idBodega, int $idProducto): ?array
     {
-        $sql = <<<SQL
-            SELECT id_stock_bodega, stock_actual
-            FROM stock_bodega
-            WHERE id_bodega = :id_bodega AND id_producto = :id_producto
-            LIMIT 1
-            FOR UPDATE
-        SQL;
-
-        $sentencia = $conexion->prepare($sql);
-        $sentencia->execute([
-            'id_bodega' => $idBodega,
-            'id_producto' => $idProducto,
-        ]);
-
-        $fila = $sentencia->fetch();
-
-        return $fila ?: null;
+        return $this->servicioStockBodega->obtenerParaActualizar($conexion, $idBodega, $idProducto);
     }
 
     private function crearVenta(PDO $conexion, array $datos): int
     {
         $lock = 'factura_salidas_2026';
-        if (!$this->adquirirBloqueoFactura($conexion, $lock)) {
+        if (!$this->servicioConsecutivos->adquirirBloqueoFactura($conexion, $lock)) {
             throw new RuntimeException('No se pudo bloquear la numeracion de facturas de salidas.');
         }
 
         try {
-            $numero = $this->obtenerSiguienteNumeroFactura($conexion, 'ventas', self::RANGO_INICIO, self::RANGO_FIN, true);
+            $numero = $this->servicioConsecutivos->obtenerSiguienteNumeroFactura(
+                $conexion,
+                self::PREFIJO_FACTURA,
+                'ventas',
+                self::RANGO_INICIO,
+                self::RANGO_FIN,
+                true
+            );
             $codigoVenta = self::PREFIJO_FACTURA . $numero;
         } finally {
-            $this->liberarBloqueoFactura($conexion, $lock);
+            $this->servicioConsecutivos->liberarBloqueoFactura($conexion, $lock);
         }
 
         $sql = <<<SQL
@@ -421,53 +362,6 @@ final class RepositorioSalida
         ]);
 
         return (int) $conexion->lastInsertId();
-    }
-
-    private function obtenerSiguienteNumeroFactura(
-        PDO $conexion,
-        string $tabla,
-        int $inicio,
-        int $fin,
-        bool $forUpdate = false
-    ): int {
-        $forUpdateSql = $forUpdate ? ' FOR UPDATE' : '';
-        $sql = "SELECT codigo FROM {$tabla} WHERE codigo LIKE :prefijo{$forUpdateSql}";
-        $sentencia = $conexion->prepare($sql);
-        $sentencia->execute(['prefijo' => self::PREFIJO_FACTURA . '%']);
-        $filas = $sentencia->fetchAll();
-
-        $usados = [];
-        foreach ($filas as $fila) {
-            $codigo = (string) ($fila['codigo'] ?? '');
-            if (preg_match('/^FAC-2026-(\d{4})$/', $codigo, $coincidencia) === 1) {
-                $numero = (int) $coincidencia[1];
-                if ($numero >= $inicio && $numero <= $fin) {
-                    $usados[$numero] = true;
-                }
-            }
-        }
-
-        for ($n = $inicio; $n <= $fin; $n++) {
-            if (!isset($usados[$n])) {
-                return $n;
-            }
-        }
-
-        throw new RuntimeException('Se agotaron los consecutivos de facturas para salidas (5000-9999).');
-    }
-
-    private function adquirirBloqueoFactura(PDO $conexion, string $nombre): bool
-    {
-        $sentencia = $conexion->prepare('SELECT GET_LOCK(:nombre, 5) AS bloqueado');
-        $sentencia->execute(['nombre' => $nombre]);
-        $fila = $sentencia->fetch();
-        return ((int) ($fila['bloqueado'] ?? 0)) === 1;
-    }
-
-    private function liberarBloqueoFactura(PDO $conexion, string $nombre): void
-    {
-        $sentencia = $conexion->prepare('SELECT RELEASE_LOCK(:nombre) AS liberado');
-        $sentencia->execute(['nombre' => $nombre]);
     }
 
     private function crearDetalleVenta(
@@ -503,46 +397,12 @@ final class RepositorioSalida
 
     private function descontarStockBodega(PDO $conexion, int $idStockBodega, int $cantidad): void
     {
-        $sql = <<<SQL
-            UPDATE stock_bodega
-            SET stock_actual = stock_actual - :cantidad
-            WHERE id_stock_bodega = :id_stock_bodega
-        SQL;
-
-        $sentencia = $conexion->prepare($sql);
-        $sentencia->execute([
-            'cantidad' => $cantidad,
-            'id_stock_bodega' => $idStockBodega,
-        ]);
+        $this->servicioStockBodega->descontarPorIdStock($conexion, $idStockBodega, $cantidad);
     }
 
     private function incrementarStockBodegaPorProducto(PDO $conexion, int $idBodega, int $idProducto, int $cantidad): void
     {
-        $stockDestino = $this->obtenerStockBodegaParaActualizar($conexion, $idBodega, $idProducto);
-        if ($stockDestino === null) {
-            $sqlInsert = <<<SQL
-                INSERT INTO stock_bodega (id_bodega, id_producto, stock_actual)
-                VALUES (:id_bodega, :id_producto, :stock_actual)
-            SQL;
-            $sentenciaInsert = $conexion->prepare($sqlInsert);
-            $sentenciaInsert->execute([
-                'id_bodega' => $idBodega,
-                'id_producto' => $idProducto,
-                'stock_actual' => $cantidad,
-            ]);
-            return;
-        }
-
-        $sqlUpdate = <<<SQL
-            UPDATE stock_bodega
-            SET stock_actual = stock_actual + :cantidad
-            WHERE id_stock_bodega = :id_stock_bodega
-        SQL;
-        $sentenciaUpdate = $conexion->prepare($sqlUpdate);
-        $sentenciaUpdate->execute([
-            'cantidad' => $cantidad,
-            'id_stock_bodega' => (int) $stockDestino['id_stock_bodega'],
-        ]);
+        $this->servicioStockBodega->incrementarPorProducto($conexion, $idBodega, $idProducto, $cantidad);
     }
 
     private function prepararSoporteTraslado(): void
@@ -567,8 +427,8 @@ final class RepositorioSalida
             $this->soporteTrasladoDisponible = true;
             return;
         }
-
-        $conexion->exec("ALTER TABLE ventas MODIFY COLUMN motivo_salida ENUM('normal','devolucion','fallo','traslado') NOT NULL DEFAULT 'normal'");
-        $this->soporteTrasladoDisponible = true;
+        throw new RuntimeException(
+            "Falta soporte de 'traslado' en ventas.motivo_salida. Ejecuta la migracion de seguridad."
+        );
     }
 }

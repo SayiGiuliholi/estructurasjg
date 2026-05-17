@@ -25,6 +25,7 @@ $urlLogoMarca = $urlLogoMarca ?? '';
         <?php endif; ?>
 
         <form action="<?= htmlspecialchars($accionFormulario, ENT_QUOTES, 'UTF-8') ?>" method="POST" autocomplete="off">
+            <?= csrfCampoOculto() ?>
             <div class="campo">
                 <label for="usuario">Usuario</label>
                 <input

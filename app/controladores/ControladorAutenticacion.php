@@ -3,16 +3,14 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../ayudantes/sesion.php';
+require_once __DIR__ . '/../ayudantes/rate_limit.php';
 require_once __DIR__ . '/../modelos/RepositorioUsuario.php';
 
 final class ControladorAutenticacion
 {
     private function esSuperadmin(Usuario $usuario): bool
     {
-        return esSuperadminSesion([
-            'id_usuario' => $usuario->idUsuario,
-            'usuario' => $usuario->usuario,
-        ]);
+        return calcularSuperadminPorRol($usuario->rol->nombre);
     }
 
     public function iniciarSesion(array $datos): array
@@ -29,10 +27,18 @@ final class ControladorAutenticacion
             ];
         }
 
+        if (loginEstaBloqueado($usuarioIngresado)) {
+            return [
+                'exito' => false,
+                'mensaje' => 'Demasiados intentos fallidos. Espera 15 minutos e intenta nuevamente.',
+            ];
+        }
+
         $repositorioUsuario = new RepositorioUsuario();
         $usuario = $repositorioUsuario->buscarPorUsuario($usuarioIngresado);
 
         if ($usuario === null) {
+            registrarFalloLogin($usuarioIngresado);
             return [
                 'exito' => false,
                 'mensaje' => 'Las credenciales ingresadas no son validas.',
@@ -50,6 +56,7 @@ final class ControladorAutenticacion
         }
 
         if (!$contrasenaValida) {
+            registrarFalloLogin($usuarioIngresado);
             return [
                 'exito' => false,
                 'mensaje' => 'Las credenciales ingresadas no son validas.',
@@ -92,6 +99,7 @@ final class ControladorAutenticacion
             'es_superadmin' => $esSuperadmin ? 1 : 0,
         ];
 
+        limpiarBloqueoLogin($usuarioIngresado);
         $repositorioUsuario->actualizarUltimoAcceso($usuario->idUsuario);
 
         return ['exito' => true];

@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../configuracion/conexion.php';
 require_once __DIR__ . '/Producto.php';
+require_once __DIR__ . '/ServicioMetricasProducto.php';
 
 final class RepositorioProducto
 {
+    // Soporte y servicios compartidos
     private ?bool $columnaEstadoDisponible = null;
+    private ServicioMetricasProducto $servicioMetricasProducto;
 
+    public function __construct()
+    {
+        $this->servicioMetricasProducto = new ServicioMetricasProducto();
+    }
+
+    /**
+     * Verifica si el codigo ya existe (con opcion de ignorar un id).
+     */
     private function existeCodigo(string $codigo, ?int $ignorarIdProducto = null): bool
     {
         $conexion = obtenerConexion();
@@ -26,22 +37,30 @@ final class RepositorioProducto
         return (bool) $sentencia->fetchColumn();
     }
 
+    /**
+     * Obtiene todos los productos (sin paginacion efectiva).
+     */
     public function obtenerTodos(): array
     {
         return $this->obtenerPaginado(1000000, 0);
     }
 
+    /**
+     * Agrega la columna de estado si no existe.
+     */
     public function prepararSoporteEstado(): void
     {
         if ($this->tieneColumnaEstado()) {
             return;
         }
-
-        $conexion = obtenerConexion();
-        $conexion->exec('ALTER TABLE productos ADD COLUMN estado TINYINT(1) NOT NULL DEFAULT 1 AFTER fecha');
-        $this->columnaEstadoDisponible = true;
+        throw new RuntimeException(
+            'Falta la columna productos.estado. Ejecuta la migracion de seguridad antes de continuar.'
+        );
     }
 
+    /**
+     * Obtiene catalogo paginado para listado de productos.
+     */
     public function obtenerPaginado(int $limite = 20, int $offset = 0): array
     {
         $conexion = obtenerConexion();
@@ -118,6 +137,9 @@ final class RepositorioProducto
         );
     }
 
+    /**
+     * Busca un producto por id.
+     */
     public function buscarPorId(int $idProducto): ?Producto
     {
         $conexion = obtenerConexion();
@@ -176,6 +198,9 @@ final class RepositorioProducto
             );
     }
 
+    /**
+     * Crea un nuevo producto.
+     */
     public function crear(array $datos): int
     {
         if ($this->existeCodigo((string) ($datos['codigo'] ?? ''))) {
@@ -201,6 +226,9 @@ final class RepositorioProducto
         return (int) $conexion->lastInsertId();
     }
 
+    /**
+     * Actualiza un producto existente.
+     */
     public function actualizar(int $idProducto, array $datos): void
     {
         if ($this->existeCodigo((string) ($datos['codigo'] ?? ''), $idProducto)) {
@@ -231,6 +259,9 @@ final class RepositorioProducto
         ]);
     }
 
+    /**
+     * Elimina un producto por id.
+     */
     public function eliminar(int $idProducto): void
     {
         $conexion = obtenerConexion();
@@ -238,6 +269,9 @@ final class RepositorioProducto
         $sentencia->execute(['id_producto' => $idProducto]);
     }
 
+    /**
+     * Cambia estado activo/inactivo de un producto.
+     */
     public function cambiarEstado(int $idProducto, bool $activo): void
     {
         if (!$this->tieneColumnaEstado()) {
@@ -254,36 +288,41 @@ final class RepositorioProducto
         ]);
     }
 
+    /**
+     * Total de productos en catalogo.
+     */
     public function contarTotal(): int
     {
-        $conexion = obtenerConexion();
-        $fila = $conexion->query('SELECT COUNT(*) AS total FROM productos')->fetch();
-        return (int) ($fila['total'] ?? 0);
+        return $this->servicioMetricasProducto->contarTotal();
     }
 
+    /**
+     * Suma global de stock.
+     */
     public function sumarStockTotal(): int
     {
-        $conexion = obtenerConexion();
-        $fila = $conexion->query('SELECT COALESCE(SUM(stock), 0) AS total_stock FROM productos')->fetch();
-        return (int) ($fila['total_stock'] ?? 0);
+        return $this->servicioMetricasProducto->sumarStockTotal();
     }
 
+    /**
+     * Cuenta productos con stock menor o igual al umbral.
+     */
     public function contarStockBajo(int $umbral = 10): int
     {
-        $conexion = obtenerConexion();
-        $sentencia = $conexion->prepare('SELECT COUNT(*) AS total FROM productos WHERE stock <= :umbral');
-        $sentencia->execute(['umbral' => $umbral]);
-        $fila = $sentencia->fetch();
-        return (int) ($fila['total'] ?? 0);
+        return $this->servicioMetricasProducto->contarStockBajo($umbral);
     }
 
+    /**
+     * Valor total estimado de inventario.
+     */
     public function calcularValorEstimado(): float
     {
-        $conexion = obtenerConexion();
-        $fila = $conexion->query('SELECT COALESCE(SUM(stock * precio), 0) AS valor FROM productos')->fetch();
-        return (float) ($fila['valor'] ?? 0);
+        return $this->servicioMetricasProducto->calcularValorEstimado();
     }
 
+    /**
+     * Detecta si existe columna estado en productos.
+     */
     private function tieneColumnaEstado(): bool
     {
         if ($this->columnaEstadoDisponible !== null) {

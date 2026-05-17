@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioSalida.php';
 require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
 require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
+require_once __DIR__ . '/../../../ayudantes/csrf.php';
 
 $repositorioSalida = new RepositorioSalida();
 $repositorioBodega = new RepositorioBodega();
@@ -52,7 +53,9 @@ $formularioSalida = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$puedeRegistrarMovimientos) {
+    if (!csrfEsValidoEnPost($_POST)) {
+        $mensajeError = 'Token de seguridad invalido. Recarga la pagina e intenta nuevamente.';
+    } elseif (!$puedeRegistrarMovimientos) {
         $mensajeError = 'Tu rol solo permite consultar movimientos. No puedes registrar salidas.';
     } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));

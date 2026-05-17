@@ -117,6 +117,21 @@ Sistema web de inventario en PHP para gestionar:
 - Validaciones criticas se hacen en backend (repositorios/controladores), no solo en JS.
 - Se usa `htmlspecialchars(..., ENT_QUOTES, 'UTF-8')` para salida segura en vistas.
 - Los modulos de entradas/salidas actualizan stock general y stock por bodega.
+- Todos los formularios `POST` usan token CSRF y validacion en backend.
+- Se aplican encabezados de seguridad HTTP desde `app/ayudantes/seguridad_http.php`.
+- El login tiene limite de intentos fallidos por usuario+IP.
+
+## Variables de entorno recomendadas
+- `DB_HOST`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `SUPERADMIN_ROLE_NAME` (por defecto: `superadmin`)
+
+## Migraciones obligatorias de seguridad
+Ejecuta:
+- `database/02_migracion_seguridad.sql`
+- `database/03_rol_superadmin.sql`
 
 ## Ejecucion local (resumen)
 1. Importa `database/01_tablas_inventario.sql` en MySQL.

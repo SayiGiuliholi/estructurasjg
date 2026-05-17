@@ -4,9 +4,21 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../configuracion/conexion.php';
 require_once __DIR__ . '/Usuario.php';
+require_once __DIR__ . '/ServicioRolesPermisos.php';
 
 final class RepositorioUsuario
 {
+    // Servicio dedicado para roles/permisos
+    private ServicioRolesPermisos $servicioRolesPermisos;
+
+    public function __construct()
+    {
+        $this->servicioRolesPermisos = new ServicioRolesPermisos();
+    }
+
+    /**
+     * Verifica si el nombre de usuario ya existe.
+     */
     private function existeNombreUsuario(string $usuario, ?int $ignorarIdUsuario = null): bool
     {
         $conexion = obtenerConexion();
@@ -71,6 +83,9 @@ final class RepositorioUsuario
         SQL;
     }
 
+    /**
+     * Busca un usuario con su rol/permisos por nombre de usuario.
+     */
     public function buscarPorUsuario(string $usuario): ?Usuario
     {
         $conexion = obtenerConexion();
@@ -89,6 +104,9 @@ final class RepositorioUsuario
         return $this->construirUsuarioDesdeFila($fila);
     }
 
+    /**
+     * Busca un usuario con su rol/permisos por id de usuario.
+     */
     public function buscarPorIdUsuario(int $idUsuario): ?Usuario
     {
         $conexion = obtenerConexion();
@@ -107,6 +125,9 @@ final class RepositorioUsuario
         return $this->construirUsuarioDesdeFila($fila);
     }
 
+    /**
+     * Actualiza solo el hash de contrasena.
+     */
     public function actualizarHashContrasena(int $idUsuario, string $hashContrasena): void
     {
         $conexion = obtenerConexion();
@@ -119,6 +140,9 @@ final class RepositorioUsuario
         ]);
     }
 
+    /**
+     * Registra el ultimo acceso del usuario.
+     */
     public function actualizarUltimoAcceso(int $idUsuario): void
     {
         $conexion = obtenerConexion();
@@ -128,6 +152,9 @@ final class RepositorioUsuario
         $sentencia->execute(['id_usuario' => $idUsuario]);
     }
 
+    /**
+     * Lista usuarios para la pantalla de gestion.
+     */
     public function obtenerUsuariosParaGestion(): array
     {
         $conexion = obtenerConexion();
@@ -149,27 +176,17 @@ final class RepositorioUsuario
         return $conexion->query($sql)->fetchAll();
     }
 
+    /**
+     * Lista los roles con su matriz de permisos.
+     */
     public function obtenerRolesConPermisos(): array
     {
-        $conexion = obtenerConexion();
-
-        $sql = <<<SQL
-            SELECT
-                id_rol,
-                nombre,
-                p_registrar_productos,
-                p_modificar_productos,
-                p_registrar_movimientos,
-                p_consultar_movimientos,
-                p_gestionar_roles,
-                p_configuracion
-            FROM roles
-            ORDER BY id_rol ASC
-        SQL;
-
-        return $conexion->query($sql)->fetchAll();
+        return $this->servicioRolesPermisos->obtenerRolesConPermisos();
     }
 
+    /**
+     * Obtiene datos simples de usuario por id para edicion.
+     */
     public function obtenerUsuarioPorId(int $idUsuario): ?array
     {
         $conexion = obtenerConexion();
@@ -193,6 +210,9 @@ final class RepositorioUsuario
         return $fila ?: null;
     }
 
+    /**
+     * Crea un usuario desde Configuracion.
+     */
     public function crearUsuarioGestion(
         string $nombre,
         string $usuario,
@@ -221,6 +241,9 @@ final class RepositorioUsuario
         ]);
     }
 
+    /**
+     * Actualiza usuario desde Configuracion.
+     */
     public function actualizarUsuarioGestion(
         int $idUsuario,
         string $nombre,
@@ -279,31 +302,11 @@ final class RepositorioUsuario
         ]);
     }
 
+    /**
+     * Actualiza permisos de un rol.
+     */
     public function actualizarPermisosRol(int $idRol, array $permisos): void
     {
-        $conexion = obtenerConexion();
-
-        $sql = <<<SQL
-            UPDATE roles
-            SET
-                p_registrar_productos = :p_registrar_productos,
-                p_modificar_productos = :p_modificar_productos,
-                p_registrar_movimientos = :p_registrar_movimientos,
-                p_consultar_movimientos = :p_consultar_movimientos,
-                p_gestionar_roles = :p_gestionar_roles,
-                p_configuracion = :p_configuracion
-            WHERE id_rol = :id_rol
-        SQL;
-
-        $sentencia = $conexion->prepare($sql);
-        $sentencia->execute([
-            'id_rol' => $idRol,
-            'p_registrar_productos' => (int) ($permisos['registrar_productos'] ?? 0),
-            'p_modificar_productos' => (int) ($permisos['modificar_productos'] ?? 0),
-            'p_registrar_movimientos' => (int) ($permisos['registrar_movimientos'] ?? 0),
-            'p_consultar_movimientos' => (int) ($permisos['consultar_movimientos'] ?? 0),
-            'p_gestionar_roles' => (int) ($permisos['gestionar_roles'] ?? 0),
-            'p_configuracion' => (int) ($permisos['configuracion'] ?? 0),
-        ]);
+        $this->servicioRolesPermisos->actualizarPermisosRol($idRol, $permisos);
     }
 }

@@ -6,17 +6,40 @@ require_once __DIR__ . '/../preparadores/preparar_configuracion.php';
 require_once __DIR__ . '/../../../modelos/RepositorioUsuario.php';
 require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
 require_once __DIR__ . '/../../../ayudantes/sesion.php';
+require_once __DIR__ . '/../../../ayudantes/csrf.php';
 
 $repositorioUsuario = new RepositorioUsuario();
 $repositorioAuditoria = new RepositorioAuditoria();
 
 $esSuperadminSesion = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
 $esAdministradorSesion = $esSuperadminSesion
-    || strtolower((string) ($_SESSION['autenticacion']['rol'] ?? '')) === 'administrador'
-    || (int) ($_SESSION['autenticacion']['id_rol'] ?? 0) === 1;
+    || strtolower(trim((string) ($_SESSION['autenticacion']['rol'] ?? ''))) === 'administrador';
+
+function esRolPrivilegiadoPorNombre(string $nombreRol): bool
+{
+    $rol = strtolower(trim($nombreRol));
+    return $rol === 'administrador' || $rol === 'superadmin';
+}
+
+function esRolSuperadmin(RepositorioUsuario $repositorioUsuario, int $idRol): bool
+{
+    if ($idRol <= 0) {
+        return false;
+    }
+
+    $roles = $repositorioUsuario->obtenerRolesConPermisos();
+    foreach ($roles as $rol) {
+        if ((int) ($rol['id_rol'] ?? 0) !== $idRol) {
+            continue;
+        }
+        return strtolower(trim((string) ($rol['nombre'] ?? ''))) === 'superadmin';
+    }
+
+    return false;
+}
 
 /**
- * Determina si el rol indicado corresponde al rol Administrador.
+ * Determina si el rol indicado corresponde a un rol privilegiado.
  */
 function esRolAdministrador(RepositorioUsuario $repositorioUsuario, int $idRol): bool
 {
@@ -30,7 +53,7 @@ function esRolAdministrador(RepositorioUsuario $repositorioUsuario, int $idRol):
         if ($idRolActual !== $idRol) {
             continue;
         }
-        return strtolower((string) ($rol['nombre'] ?? '')) === 'administrador';
+        return esRolPrivilegiadoPorNombre((string) ($rol['nombre'] ?? ''));
     }
 
     return false;
@@ -58,7 +81,7 @@ function esRolEmpleado(RepositorioUsuario $repositorioUsuario, int $idRol): bool
 }
 
 /**
- * Determina si el usuario indicado pertenece al rol Administrador.
+ * Determina si el usuario indicado pertenece a un rol privilegiado.
  */
 function esUsuarioAdministrador(RepositorioUsuario $repositorioUsuario, int $idUsuario): bool
 {
@@ -97,10 +120,7 @@ function refrescarSesionAutenticacionActual(RepositorioUsuario $repositorioUsuar
         'id_rol' => $usuarioActualizado->rol->idRol,
         'rol' => $usuarioActualizado->rol->nombre,
         'permisos' => $usuarioActualizado->rol->permisos,
-        'es_superadmin' => esSuperadminSesion([
-            'id_usuario' => $usuarioActualizado->idUsuario,
-            'usuario' => $usuarioActualizado->usuario,
-        ]) ? 1 : 0,
+        'es_superadmin' => calcularSuperadminPorRol($usuarioActualizado->rol->nombre) ? 1 : 0,
     ];
 }
 
@@ -136,6 +156,9 @@ if (isset($_GET['editar_usuario'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrfEsValidoEnPost($_POST)) {
+        $mensajeError = 'Token de seguridad invalido. Recarga la pagina e intenta nuevamente.';
+    } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
     if ($accion === 'guardar_usuario') {
@@ -228,15 +251,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($accion === 'guardar_permisos_rol') {
         $idRolPermiso = (int) ($_POST['id_rol'] ?? 0);
+        $esRolSuperadminObjetivo = esRolSuperadmin($repositorioUsuario, $idRolPermiso);
+        $esRolEmpleadoObjetivo = esRolEmpleado($repositorioUsuario, $idRolPermiso);
+
         if (!$esAdministradorSesion) {
             $mensajeError = 'Solo los administradores pueden modificar permisos de rol.';
         } elseif ($idRolPermiso <= 0) {
             $mensajeError = 'Rol invalido para actualizar permisos.';
-        } elseif (!$esSuperadminSesion && esRolAdministrador($repositorioUsuario, $idRolPermiso)) {
-            $mensajeError = 'No tienes permiso para modificar los permisos del rol Administrador.';
+        } elseif ($esRolSuperadminObjetivo) {
+            $mensajeError = 'El rol Superadmin es protegido y no se edita desde esta seccion.';
+        } elseif (!$esSuperadminSesion && !$esRolEmpleadoObjetivo) {
+            $mensajeError = 'Como Administrador solo puedes modificar permisos del rol Empleado.';
         } else {
             try {
-                $esRolEmpleadoObjetivo = esRolEmpleado($repositorioUsuario, $idRolPermiso);
                 $repositorioUsuario->actualizarPermisosRol($idRolPermiso, [
                     'registrar_productos' => isset($_POST['registrar_productos']) ? 1 : 0,
                     'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
@@ -268,6 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mensajeError = 'No fue posible actualizar permisos del rol.';
             }
         }
+    }
     }
 }
 

@@ -26,8 +26,7 @@ final class ControladorPanel
             return true;
         }
 
-        $esAdministrador = strtolower((string) ($autenticacion['rol'] ?? '')) === 'administrador'
-            || (int) ($autenticacion['id_rol'] ?? 0) === 1;
+        $esAdministrador = strtolower(trim((string) ($autenticacion['rol'] ?? ''))) === 'administrador';
 
         return match ($modulo) {
             'entradas', 'salidas' => $this->permisoActivo($permisos, 'registrar_movimientos')

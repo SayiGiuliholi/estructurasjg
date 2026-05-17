@@ -10,10 +10,10 @@ function obtenerConexion(): PDO
         return $conexion;
     }
 
-    $servidor = '127.0.0.1';
-    $baseDeDatos = 'estructurasjg';
-    $usuario = 'root';
-    $contrasena = '';
+    $servidor = (string) (getenv('DB_HOST') ?: '127.0.0.1');
+    $baseDeDatos = (string) (getenv('DB_NAME') ?: 'estructurasjg');
+    $usuario = (string) (getenv('DB_USER') ?: 'root');
+    $contrasena = (string) (getenv('DB_PASS') ?: '');
 
     $dsn = "mysql:host={$servidor};dbname={$baseDeDatos};charset=utf8mb4";
 

@@ -50,6 +50,7 @@ $paginacion = $paginacion ?? [
     <?php endif; ?>
 
     <form class="flujo-formulario" id="form-salidas" method="post">
+        <?= csrfCampoOculto() ?>
         <fieldset <?= (isset($puedeRegistrarMovimientos) && !$puedeRegistrarMovimientos) ? 'disabled' : '' ?> style="border:0;padding:0;margin:0;display:grid;gap:14px;">
         <input type="hidden" name="accion" value="registrar">
 

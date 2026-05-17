@@ -47,6 +47,7 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
         </div>
 
         <form method="post" class="formulario-grid">
+            <?= csrfCampoOculto() ?>
             <input type="hidden" name="accion" value="guardar_usuario">
             <input type="hidden" name="id_usuario" value="<?= htmlspecialchars((string) $formularioUsuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?>">
 
@@ -196,11 +197,15 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
         <?php foreach ($rolesConPermisos as $rol): ?>
             <?php
             $nombreRolNormalizado = strtolower((string) ($rol['nombre'] ?? ''));
+            if (!in_array($nombreRolNormalizado, ['administrador', 'empleado'], true)) {
+                continue;
+            }
             $esRolAdministrador = $nombreRolNormalizado === 'administrador';
             $esRolEmpleado = $nombreRolNormalizado === 'empleado';
             $puedeEditarPermisosRol = $esSuperadminVista || !$esRolAdministrador;
             ?>
             <form method="post" class="tarjeta" style="border-radius: 12px; box-shadow: none;">
+                <?= csrfCampoOculto() ?>
                 <input type="hidden" name="accion" value="guardar_permisos_rol">
                 <input type="hidden" name="id_rol" value="<?= htmlspecialchars((string) $rol['id_rol'], ENT_QUOTES, 'UTF-8') ?>">
 

@@ -3,9 +3,21 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../../../app/filtros/autenticado.php';
+require_once __DIR__ . '/../../../app/ayudantes/sesion.php';
+require_once __DIR__ . '/../../../app/ayudantes/seguridad_http.php';
 require_once __DIR__ . '/../../../app/modelos/RepositorioEntrada.php';
 
+enviarEncabezadosSeguridad();
 header('Content-Type: application/json; charset=utf-8');
+
+if (!tienePermisoSesion('registrar_movimientos') && !tienePermisoSesion('consultar_movimientos')) {
+    http_response_code(403);
+    echo json_encode([
+        'ok' => false,
+        'mensaje' => 'No tienes permisos para consultar productos de entradas.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $codigo = trim((string) ($_GET['codigo'] ?? ''));
 

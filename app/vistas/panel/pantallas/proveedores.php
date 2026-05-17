@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../preparadores/preparar_proveedores.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
+require_once __DIR__ . '/../../../ayudantes/csrf.php';
 
 $repositorioProveedor = new RepositorioProveedor();
 $puedeGestionProveedores = ((int) ($permisos['registrar_productos'] ?? 0) === 1)
@@ -23,7 +24,9 @@ $fichaProveedor = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$puedeGestionProveedores) {
+    if (!csrfEsValidoEnPost($_POST)) {
+        $mensajeError = 'Token de seguridad invalido. Recarga la pagina e intenta nuevamente.';
+    } elseif (!$puedeGestionProveedores) {
         $mensajeError = 'Tu rol solo permite consulta. No puedes gestionar proveedores.';
     } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));

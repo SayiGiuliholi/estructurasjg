@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProducto.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
 require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
+require_once __DIR__ . '/../../../ayudantes/csrf.php';
 
 $repositorioProducto = new RepositorioProducto();
 $repositorioProveedor = new RepositorioProveedor();
@@ -33,7 +34,9 @@ try {
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-    if (!$puedeGestionProductos) {
+    if (!csrfEsValidoEnPost($_POST)) {
+        $mensajeError = 'Token de seguridad invalido. Recarga la pagina e intenta nuevamente.';
+    } elseif (!$puedeGestionProductos) {
         $mensajeError = 'Tu rol solo permite consulta. No puedes modificar productos.';
     } else {
     $accion = (string) ($_POST['accion'] ?? '');
