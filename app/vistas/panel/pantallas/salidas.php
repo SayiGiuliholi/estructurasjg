@@ -6,9 +6,11 @@ require_once __DIR__ . '/../preparadores/preparar_salidas.php';
 require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioSalida.php';
 require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
+require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
 
 $repositorioSalida = new RepositorioSalida();
 $repositorioBodega = new RepositorioBodega();
+$repositorioAuditoria = new RepositorioAuditoria();
 $puedeRegistrarMovimientos = ((int) ($permisos['registrar_movimientos'] ?? 0)) === 1;
 
 $opcionesPorPagina = [10, 20, 50];
@@ -38,6 +40,7 @@ $normalizarMoneda = static function ($valor): float {
 $formularioSalida = [
     'codigo_factura' => $repositorioSalida->obtenerSiguienteCodigoFactura(),
     'id_bodega' => '',
+    'id_bodega_destino' => '',
     'motivo_salida' => 'normal',
     'detalles' => [[
         'codigo' => '',
@@ -57,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($accion === 'registrar') {
         $codigoFactura = trim((string) ($_POST['codigo_factura'] ?? ''));
         $idBodega = (int) ($_POST['id_bodega'] ?? 0);
+        $idBodegaDestino = (int) ($_POST['id_bodega_destino'] ?? 0);
         $motivoSalida = trim((string) ($_POST['motivo_salida'] ?? 'normal'));
         $idUsuario = (int) ($autenticacion['id_usuario'] ?? 0);
 
@@ -102,7 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formularioSalida = [
             'codigo_factura' => $codigoFactura,
             'id_bodega' => (string) $idBodega,
-            'motivo_salida' => in_array($motivoSalida, ['normal', 'devolucion', 'fallo'], true) ? $motivoSalida : 'normal',
+            'id_bodega_destino' => (string) $idBodegaDestino,
+            'motivo_salida' => in_array($motivoSalida, ['normal', 'devolucion', 'fallo', 'traslado'], true) ? $motivoSalida : 'normal',
             'detalles' => array_map(
                 static fn(array $detalle): array => [
                     'codigo' => (string) ($detalle['codigo'] ?? ''),
@@ -118,9 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (
             $idBodega <= 0
             || $idUsuario <= 0
-            || !in_array($motivoSalida, ['normal', 'devolucion', 'fallo'], true)
+            || !in_array($motivoSalida, ['normal', 'devolucion', 'fallo', 'traslado'], true)
         ) {
             $mensajeError = 'Completa correctamente bodega y motivo de salida.';
+        } elseif ($motivoSalida === 'traslado' && ($idBodegaDestino <= 0 || $idBodegaDestino === $idBodega)) {
+            $mensajeError = 'Para traslado debes elegir una bodega destino diferente a la de origen.';
         } else {
             $lineasIncompletas = array_filter(
                 $detallesFactura,
@@ -153,14 +160,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $repositorioSalida->registrarSalidaFactura([
                             'codigo_factura' => $codigoFactura,
                             'id_bodega' => $idBodega,
+                            'id_bodega_destino' => $idBodegaDestino,
                             'id_usuario' => $idUsuario,
                             'motivo_salida' => $motivoSalida,
                         ], array_values($lineasValidas));
 
-                        $mensajeExito = 'Factura de salida registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
+                        $mensajeExito = $motivoSalida === 'traslado'
+                            ? ('Traslado registrado correctamente con ' . count($lineasValidas) . ' producto(s).')
+                            : ('Factura de salida registrada correctamente con ' . count($lineasValidas) . ' producto(s).');
+                        $repositorioAuditoria->registrarEvento([
+                            'id_usuario' => (int) ($autenticacion['id_usuario'] ?? 0),
+                            'usuario' => (string) ($autenticacion['usuario'] ?? ''),
+                            'modulo' => 'salidas',
+                            'accion' => $motivoSalida === 'traslado' ? 'registrar_traslado' : 'registrar_salida',
+                            'entidad' => 'venta',
+                            'id_entidad' => null,
+                            'detalle' => [
+                                'codigo_factura' => $codigoFactura,
+                                'motivo_salida' => $motivoSalida,
+                                'id_bodega_origen' => $idBodega,
+                                'id_bodega_destino' => $motivoSalida === 'traslado' ? $idBodegaDestino : null,
+                                'lineas' => count($lineasValidas),
+                            ],
+                        ]);
                             $formularioSalida = [
                                 'codigo_factura' => $repositorioSalida->obtenerSiguienteCodigoFactura(),
                                 'id_bodega' => '',
+                                'id_bodega_destino' => '',
                                 'motivo_salida' => 'normal',
                             'detalles' => [[
                                 'codigo' => '',

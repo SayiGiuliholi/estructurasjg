@@ -7,6 +7,7 @@ require_once __DIR__ . '/../configuracion/conexion.php';
 final class RepositorioSalida
 {
     private ?bool $columnaEstadoDisponible = null;
+    private ?bool $soporteTrasladoDisponible = null;
     private const PREFIJO_FACTURA = 'FAC-2026-';
     private const RANGO_INICIO = 5000;
     private const RANGO_FIN = 9999;
@@ -17,6 +18,7 @@ final class RepositorioSalida
             [
                 'codigo_factura' => '',
                 'id_bodega' => (int) ($datos['id_bodega'] ?? 0),
+                'id_bodega_destino' => (int) ($datos['id_bodega_destino'] ?? 0),
                 'id_usuario' => (int) ($datos['id_usuario'] ?? 0),
                 'motivo_salida' => (string) ($datos['motivo_salida'] ?? 'normal'),
             ],
@@ -37,6 +39,7 @@ final class RepositorioSalida
 
     public function registrarSalidaFactura(array $cabecera, array $detalles): void
     {
+        $this->prepararSoporteTraslado();
         $conexion = obtenerConexion();
         $conexion->beginTransaction();
 
@@ -46,6 +49,7 @@ final class RepositorioSalida
             }
 
             $idBodega = (int) ($cabecera['id_bodega'] ?? 0);
+            $idBodegaDestino = (int) ($cabecera['id_bodega_destino'] ?? 0);
             $idUsuario = (int) ($cabecera['id_usuario'] ?? 0);
             $motivoSalida = (string) ($cabecera['motivo_salida'] ?? 'normal');
 
@@ -53,8 +57,16 @@ final class RepositorioSalida
                 throw new RuntimeException('Cabecera invalida para registrar la salida.');
             }
 
-            if (!in_array($motivoSalida, ['normal', 'devolucion', 'fallo'], true)) {
+            if (!in_array($motivoSalida, ['normal', 'devolucion', 'fallo', 'traslado'], true)) {
                 throw new RuntimeException('Motivo de salida invalido.');
+            }
+            if ($motivoSalida === 'traslado') {
+                if ($idBodegaDestino <= 0) {
+                    throw new RuntimeException('Debes seleccionar bodega destino para el traslado.');
+                }
+                if ($idBodegaDestino === $idBodega) {
+                    throw new RuntimeException('La bodega destino debe ser distinta a la bodega origen.');
+                }
             }
 
             $cantidadTotal = 0;
@@ -102,7 +114,9 @@ final class RepositorioSalida
                 'codigo_factura' => (string) ($cabecera['codigo_factura'] ?? ''),
                 'id_bodega' => $idBodega,
                 'id_usuario' => $idUsuario,
-                'descripcion' => 'Factura con ' . count($detallesProcesados) . ' prod',
+                'descripcion' => $motivoSalida === 'traslado'
+                    ? ('Traslado de bodega ' . $idBodega . ' a bodega ' . $idBodegaDestino)
+                    : ('Factura con ' . count($detallesProcesados) . ' prod'),
                 'motivo_salida' => $motivoSalida,
                 'cantidad' => $cantidadTotal,
             ]);
@@ -116,17 +130,31 @@ final class RepositorioSalida
                     (float) $detalleProcesado['precio_unitario']
                 );
 
-                $this->descontarStockProducto(
-                    $conexion,
-                    (int) $detalleProcesado['id_producto'],
-                    (int) $detalleProcesado['cantidad']
-                );
+                if ($motivoSalida === 'traslado') {
+                    $this->descontarStockBodega(
+                        $conexion,
+                        (int) $detalleProcesado['id_stock_bodega'],
+                        (int) $detalleProcesado['cantidad']
+                    );
+                    $this->incrementarStockBodegaPorProducto(
+                        $conexion,
+                        $idBodegaDestino,
+                        (int) $detalleProcesado['id_producto'],
+                        (int) $detalleProcesado['cantidad']
+                    );
+                } else {
+                    $this->descontarStockProducto(
+                        $conexion,
+                        (int) $detalleProcesado['id_producto'],
+                        (int) $detalleProcesado['cantidad']
+                    );
 
-                $this->descontarStockBodega(
-                    $conexion,
-                    (int) $detalleProcesado['id_stock_bodega'],
-                    (int) $detalleProcesado['cantidad']
-                );
+                    $this->descontarStockBodega(
+                        $conexion,
+                        (int) $detalleProcesado['id_stock_bodega'],
+                        (int) $detalleProcesado['cantidad']
+                    );
+                }
             }
 
             $conexion->commit();
@@ -231,6 +259,7 @@ final class RepositorioSalida
                 v.id_venta,
                 v.codigo AS factura,
                 v.motivo_salida,
+                v.descripcion AS descripcion_movimiento,
                 v.fecha,
                 dv.cantidad,
                 p.codigo AS codigo_producto,
@@ -485,5 +514,61 @@ final class RepositorioSalida
             'cantidad' => $cantidad,
             'id_stock_bodega' => $idStockBodega,
         ]);
+    }
+
+    private function incrementarStockBodegaPorProducto(PDO $conexion, int $idBodega, int $idProducto, int $cantidad): void
+    {
+        $stockDestino = $this->obtenerStockBodegaParaActualizar($conexion, $idBodega, $idProducto);
+        if ($stockDestino === null) {
+            $sqlInsert = <<<SQL
+                INSERT INTO stock_bodega (id_bodega, id_producto, stock_actual)
+                VALUES (:id_bodega, :id_producto, :stock_actual)
+            SQL;
+            $sentenciaInsert = $conexion->prepare($sqlInsert);
+            $sentenciaInsert->execute([
+                'id_bodega' => $idBodega,
+                'id_producto' => $idProducto,
+                'stock_actual' => $cantidad,
+            ]);
+            return;
+        }
+
+        $sqlUpdate = <<<SQL
+            UPDATE stock_bodega
+            SET stock_actual = stock_actual + :cantidad
+            WHERE id_stock_bodega = :id_stock_bodega
+        SQL;
+        $sentenciaUpdate = $conexion->prepare($sqlUpdate);
+        $sentenciaUpdate->execute([
+            'cantidad' => $cantidad,
+            'id_stock_bodega' => (int) $stockDestino['id_stock_bodega'],
+        ]);
+    }
+
+    private function prepararSoporteTraslado(): void
+    {
+        if ($this->soporteTrasladoDisponible !== null) {
+            return;
+        }
+
+        $conexion = obtenerConexion();
+        $sql = <<<SQL
+            SELECT COLUMN_TYPE
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'ventas'
+              AND COLUMN_NAME = 'motivo_salida'
+            LIMIT 1
+        SQL;
+        $fila = $conexion->query($sql)->fetch();
+        $tipoColumna = strtolower((string) ($fila['COLUMN_TYPE'] ?? ''));
+
+        if (str_contains($tipoColumna, "'traslado'")) {
+            $this->soporteTrasladoDisponible = true;
+            return;
+        }
+
+        $conexion->exec("ALTER TABLE ventas MODIFY COLUMN motivo_salida ENUM('normal','devolucion','fallo','traslado') NOT NULL DEFAULT 'normal'");
+        $this->soporteTrasladoDisponible = true;
     }
 }

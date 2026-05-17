@@ -9,6 +9,7 @@ function prepararDatosModuloConfiguracion(
     array $formularioUsuario,
     array $usuarios,
     array $roles,
+    array $auditoriaEventos = [],
     string $mensajeExito = '',
     string $mensajeError = ''
 ): array
@@ -59,6 +60,35 @@ function prepararDatosModuloConfiguracion(
         $roles
     );
 
+    $auditoriaNormalizada = array_map(
+        static function (array $evento): array {
+            $marcaTiempo = strtotime((string) ($evento['fecha_evento'] ?? ''));
+            $fechaEvento = $marcaTiempo !== false ? date('d/m/Y H:i', $marcaTiempo) : 'Sin fecha';
+
+            $detalleRaw = (string) ($evento['detalle_json'] ?? '');
+            $detalleTexto = '';
+            if ($detalleRaw !== '') {
+                $detalleDecodificado = json_decode($detalleRaw, true);
+                if (is_array($detalleDecodificado)) {
+                    $detalleTexto = json_encode($detalleDecodificado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+                } else {
+                    $detalleTexto = $detalleRaw;
+                }
+            }
+
+            return [
+                'fecha' => $fechaEvento,
+                'usuario' => (string) ($evento['usuario'] ?? ''),
+                'modulo' => (string) ($evento['modulo'] ?? ''),
+                'accion' => (string) ($evento['accion'] ?? ''),
+                'entidad' => (string) ($evento['entidad'] ?? ''),
+                'id_entidad' => (string) (($evento['id_entidad'] ?? '') !== null ? $evento['id_entidad'] : ''),
+                'detalle' => $detalleTexto,
+            ];
+        },
+        $auditoriaEventos
+    );
+
     return [
         'tituloPagina' => 'Configuracion',
         'tituloSeccion' => 'Configuracion de usuarios y permisos',
@@ -69,6 +99,7 @@ function prepararDatosModuloConfiguracion(
         'rolesOpciones' => $rolesOpciones,
         'usuarios' => $usuariosNormalizados,
         'rolesConPermisos' => $rolesConPermisos,
+        'auditoriaEventos' => $auditoriaNormalizada,
         'mensajeExito' => $mensajeExito,
         'mensajeError' => $mensajeError,
     ];

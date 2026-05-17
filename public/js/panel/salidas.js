@@ -1,6 +1,10 @@
 (function () {
     var apiProducto = window.URL_API_PRODUCTO_SALIDA || '';
     var selectBodega = document.getElementById('salida-bodega');
+    var selectBodegaDestino = document.getElementById('salida-bodega-destino');
+    var grupoBodegaDestino = document.getElementById('grupo-salida-bodega-destino');
+    var selectMotivo = document.getElementById('salida-motivo');
+    var botonGuardar = document.getElementById('salida-boton-guardar');
     var cuerpoDetalles = document.getElementById('salida-detalles-body');
     var botonAgregar = document.getElementById('salida-agregar-linea');
     var totalFactura = document.getElementById('salida-total-factura');
@@ -9,6 +13,37 @@
 
     if (!selectBodega || !cuerpoDetalles || !botonAgregar || !totalFactura || !mensajeValidacion || !formulario) {
         return;
+    }
+
+    function esTrasladoActivo() {
+        return selectMotivo && String(selectMotivo.value || '').trim() === 'traslado';
+    }
+
+    function actualizarModoTraslado() {
+        var traslado = esTrasladoActivo();
+
+        if (grupoBodegaDestino) {
+            grupoBodegaDestino.hidden = !traslado;
+            grupoBodegaDestino.style.display = traslado ? '' : 'none';
+        }
+
+        if (selectBodegaDestino) {
+            if (traslado) {
+                selectBodegaDestino.setAttribute('required', 'required');
+            } else {
+                selectBodegaDestino.removeAttribute('required');
+            }
+        }
+
+        if (botonGuardar) {
+            botonGuardar.textContent = traslado ? 'Trasladar productos' : 'Registrar salida';
+        }
+
+        if (traslado) {
+            setMensaje('Modo traslado: se descuenta de origen y se suma en bodega destino.', 'ok');
+        } else {
+            setMensaje('Factura validada por stock en cada linea.', 'ok');
+        }
     }
 
     function obtenerNumero(valor, fallback) {
@@ -126,7 +161,11 @@
             return false;
         }
 
-        setMensaje('Factura validada por stock en cada linea.', 'ok');
+        if (esTrasladoActivo()) {
+            setMensaje('Modo traslado: se descuenta de origen y se suma en bodega destino.', 'ok');
+        } else {
+            setMensaje('Factura validada por stock en cada linea.', 'ok');
+        }
         return true;
     }
 
@@ -274,12 +313,36 @@
         recalcularFactura();
     });
 
+    if (selectMotivo) {
+        selectMotivo.addEventListener('change', function () {
+            actualizarModoTraslado();
+        });
+    }
+
     formulario.addEventListener('submit', function (evento) {
+        if (esTrasladoActivo()) {
+            var origen = String(selectBodega.value || '').trim();
+            var destino = selectBodegaDestino ? String(selectBodegaDestino.value || '').trim() : '';
+
+            if (destino === '') {
+                evento.preventDefault();
+                setMensaje('Selecciona una bodega destino para el traslado.', 'error');
+                return;
+            }
+
+            if (origen !== '' && origen === destino) {
+                evento.preventDefault();
+                setMensaje('La bodega destino debe ser distinta a la bodega origen.', 'error');
+                return;
+            }
+        }
+
         if (!recalcularFactura()) {
             evento.preventDefault();
         }
     });
 
+    actualizarModoTraslado();
     recalcularFactura();
 })();
 

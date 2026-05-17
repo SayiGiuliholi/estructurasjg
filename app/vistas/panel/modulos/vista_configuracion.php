@@ -8,9 +8,27 @@ $formularioUsuario = $formularioUsuario ?? ['id_usuario'=>0,'nombre'=>'','usuari
 $rolesOpciones = $rolesOpciones ?? [];
 $usuarios = $usuarios ?? [];
 $rolesConPermisos = $rolesConPermisos ?? [];
+$auditoriaEventos = $auditoriaEventos ?? [];
 $esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
+$seccionConfiguracion = trim((string) ($_GET['seccion'] ?? 'gestion'));
+$esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria';
 ?>
 <div class="contenido-personalizado">
+    <article class="tarjeta bloque" style="padding: 12px 16px;">
+        <div class="fila-acciones">
+            <a
+                class="<?= $esSeccionAuditoria ? 'boton-fantasma' : 'boton-principal' ?>"
+                href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion']), ENT_QUOTES, 'UTF-8') ?>"
+            >Gestion</a>
+            <?php if ($esSuperadminVista): ?>
+                <a
+                    class="<?= $esSeccionAuditoria ? 'boton-principal' : 'boton-fantasma' ?>"
+                    href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'auditoria']), ENT_QUOTES, 'UTF-8') ?>"
+                >Auditoria</a>
+            <?php endif; ?>
+        </div>
+    </article>
+
     <?php if ($mensajeExito !== ''): ?>
         <p class="nota-exito"><?= htmlspecialchars($mensajeExito, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
@@ -19,6 +37,7 @@ $esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
         <p class="nota-error"><?= htmlspecialchars($mensajeError, ENT_QUOTES, 'UTF-8') ?></p>
     <?php endif; ?>
 
+    <?php if (!$esSeccionAuditoria): ?>
     <article class="tarjeta bloque">
         <div class="cabecera-modulo">
             <div>
@@ -247,5 +266,51 @@ $esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
             </form>
         <?php endforeach; ?>
     </article>
+    <?php endif; ?>
+
+    <?php if ($esSuperadminVista && $esSeccionAuditoria): ?>
+        <article class="tarjeta tarjeta-tabla">
+            <div class="cabecera-modulo" style="padding: 22px 22px 0;">
+                <div>
+                    <h3 class="subtitulo">Auditoria</h3>
+                    <p>Movimientos y cambios realizados por cada persona en el sistema.</p>
+                </div>
+            </div>
+
+            <div class="tabla-contenedor">
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Usuario</th>
+                            <th>Modulo</th>
+                            <th>Accion</th>
+                            <th>Entidad</th>
+                            <th>ID entidad</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (count($auditoriaEventos) === 0): ?>
+                            <tr>
+                                <td colspan="7">Aun no hay eventos de auditoria registrados.</td>
+                            </tr>
+                        <?php endif; ?>
+                        <?php foreach ($auditoriaEventos as $evento): ?>
+                            <tr>
+                                <td><?= htmlspecialchars((string) $evento['fecha'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['usuario'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['modulo'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['accion'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['entidad'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['id_entidad'], ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= htmlspecialchars((string) $evento['detalle'], ENT_QUOTES, 'UTF-8') ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    <?php endif; ?>
 </div>
 

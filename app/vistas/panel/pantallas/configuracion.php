@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../preparadores/preparar_configuracion.php';
 require_once __DIR__ . '/../../../modelos/RepositorioUsuario.php';
+require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
 require_once __DIR__ . '/../../../ayudantes/sesion.php';
 
 $repositorioUsuario = new RepositorioUsuario();
+$repositorioAuditoria = new RepositorioAuditoria();
 
 $esSuperadminSesion = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
 $esAdministradorSesion = $esSuperadminSesion
@@ -175,12 +177,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     );
                     refrescarSesionAutenticacionActual($repositorioUsuario);
                     $mensajeExito = 'Usuario actualizado correctamente.';
+                    $repositorioAuditoria->registrarEvento([
+                        'id_usuario' => (int) ($_SESSION['autenticacion']['id_usuario'] ?? 0),
+                        'usuario' => (string) ($_SESSION['autenticacion']['usuario'] ?? ''),
+                        'modulo' => 'configuracion',
+                        'accion' => 'actualizar_usuario',
+                        'entidad' => 'usuario',
+                        'id_entidad' => $idUsuario,
+                        'detalle' => [
+                            'nombre' => $nombre,
+                            'usuario' => $usuario,
+                            'id_rol' => $idRol,
+                            'estado' => $estado,
+                        ],
+                    ]);
                 } else {
                     if (trim($contrasena) === '') {
                         $mensajeError = 'La contrasena es obligatoria para crear un usuario.';
                     } else {
                         $repositorioUsuario->crearUsuarioGestion($nombre, $usuario, $contrasena, $idRol, $estado);
                         $mensajeExito = 'Usuario creado correctamente.';
+                        $repositorioAuditoria->registrarEvento([
+                            'id_usuario' => (int) ($_SESSION['autenticacion']['id_usuario'] ?? 0),
+                            'usuario' => (string) ($_SESSION['autenticacion']['usuario'] ?? ''),
+                            'modulo' => 'configuracion',
+                            'accion' => 'crear_usuario',
+                            'entidad' => 'usuario',
+                            'id_entidad' => null,
+                            'detalle' => [
+                                'nombre' => $nombre,
+                                'usuario' => $usuario,
+                                'id_rol' => $idRol,
+                                'estado' => $estado,
+                            ],
+                        ]);
                         $formularioUsuario = [
                             'id_usuario' => 0,
                             'nombre' => '',
@@ -218,6 +248,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 refrescarSesionAutenticacionActual($repositorioUsuario);
                 $mensajeExito = 'Permisos del rol actualizados correctamente.';
+                $repositorioAuditoria->registrarEvento([
+                    'id_usuario' => (int) ($_SESSION['autenticacion']['id_usuario'] ?? 0),
+                    'usuario' => (string) ($_SESSION['autenticacion']['usuario'] ?? ''),
+                    'modulo' => 'configuracion',
+                    'accion' => 'actualizar_permisos_rol',
+                    'entidad' => 'rol',
+                    'id_entidad' => $idRolPermiso,
+                    'detalle' => [
+                        'registrar_productos' => isset($_POST['registrar_productos']) ? 1 : 0,
+                        'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
+                        'registrar_movimientos' => isset($_POST['registrar_movimientos']) ? 1 : 0,
+                        'consultar_movimientos' => isset($_POST['consultar_movimientos']) ? 1 : 0,
+                        'gestionar_roles' => isset($_POST['gestionar_roles']) ? 1 : 0,
+                        'configuracion' => isset($_POST['configuracion']) ? 1 : 0,
+                    ],
+                ]);
             } catch (Throwable $error) {
                 $mensajeError = 'No fue posible actualizar permisos del rol.';
             }
@@ -225,10 +271,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$auditoriaEventos = [];
+if ($esSuperadminSesion) {
+    $auditoriaEventos = $repositorioAuditoria->obtenerEventos(250);
+}
+
 $datosModulo = prepararDatosModuloConfiguracion(
     $formularioUsuario,
     $repositorioUsuario->obtenerUsuariosParaGestion(),
     $repositorioUsuario->obtenerRolesConPermisos(),
+    $auditoriaEventos,
     $mensajeExito,
     $mensajeError
 );
@@ -243,6 +295,7 @@ $formularioUsuario = $datosModulo['formularioUsuario'];
 $rolesOpciones = $datosModulo['rolesOpciones'];
 $usuarios = $datosModulo['usuarios'];
 $rolesConPermisos = $datosModulo['rolesConPermisos'];
+$auditoriaEventos = $datosModulo['auditoriaEventos'];
 $mensajeExito = $datosModulo['mensajeExito'];
 $mensajeError = $datosModulo['mensajeError'];
 

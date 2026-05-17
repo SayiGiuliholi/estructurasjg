@@ -7,10 +7,12 @@ require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioEntrada.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
 require_once __DIR__ . '/../../../modelos/RepositorioBodega.php';
+require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
 
 $repositorioEntrada = new RepositorioEntrada();
 $repositorioProveedor = new RepositorioProveedor();
 $repositorioBodega = new RepositorioBodega();
+$repositorioAuditoria = new RepositorioAuditoria();
 $puedeRegistrarMovimientos = ((int) ($permisos['registrar_movimientos'] ?? 0)) === 1;
 
 $opcionesPorPagina = [10, 20, 50];
@@ -167,6 +169,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ], array_values($lineasValidas));
 
                         $mensajeExito = 'Factura de entrada registrada correctamente con ' . count($lineasValidas) . ' producto(s).';
+                        $repositorioAuditoria->registrarEvento([
+                            'id_usuario' => (int) ($autenticacion['id_usuario'] ?? 0),
+                            'usuario' => (string) ($autenticacion['usuario'] ?? ''),
+                            'modulo' => 'entradas',
+                            'accion' => 'registrar_entrada',
+                            'entidad' => 'compra',
+                            'id_entidad' => null,
+                            'detalle' => [
+                                'codigo_factura' => $codigoFactura,
+                                'id_bodega' => $idBodega,
+                                'id_proveedor' => $idProveedor,
+                                'lineas' => count($lineasValidas),
+                            ],
+                        ]);
                         $formularioEntrada = [
                             'codigo_factura' => $repositorioEntrada->obtenerSiguienteCodigoFactura(),
                             'id_proveedor' => '',

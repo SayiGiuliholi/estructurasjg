@@ -10,6 +10,24 @@ require_once __DIR__ . '/../../../modelos/Producto.php';
 function prepararDatosModuloProductos(array $contexto = []): array
 {
     $formatearMoneda = static fn(float $valor): string => '$' . number_format($valor, 0, ',', '.');
+    $extraerStockPorBodega = static function (string $resumenBodegas): array {
+        $resultado = [];
+        if ($resumenBodegas === '') {
+            return $resultado;
+        }
+
+        if (preg_match_all('/(BOD-\d+)\s*\((\d+)\)/i', $resumenBodegas, $coincidencias, PREG_SET_ORDER) !== false) {
+            foreach ($coincidencias as $coincidencia) {
+                $codigoBodega = strtoupper((string) ($coincidencia[1] ?? ''));
+                $stockBodega = (int) ($coincidencia[2] ?? 0);
+                if ($codigoBodega !== '') {
+                    $resultado[$codigoBodega] = $stockBodega;
+                }
+            }
+        }
+
+        return $resultado;
+    };
     /** @var Producto[] $productos */
     $productos = $contexto['catalogoProductos'] ?? [];
     $paginacion = $contexto['paginacion'] ?? [
@@ -35,6 +53,7 @@ function prepararDatosModuloProductos(array $contexto = []): array
                 'activo' => $producto->activo,
                 'estado' => $producto->activo ? 'Activo' : 'Inactivo',
                 'tipoEstado' => $producto->activo ? 'ok' : 'alerta',
+                'resumen_bodegas_raw' => (string) $producto->resumenBodegas,
                 'bodegas' => trim($producto->resumenBodegas) !== ''
                     ? (preg_replace('/\s*\(\d+\)/', '', $producto->resumenBodegas) ?: 'Sin bodega')
                     : 'Sin bodega',
@@ -49,14 +68,23 @@ function prepararDatosModuloProductos(array $contexto = []): array
     $catalogoSecundaria = [];
     foreach ($catalogoProductos as $item) {
         $bodegas = strtolower((string) ($item['bodegas'] ?? ''));
+        $stocksPorBodega = $extraerStockPorBodega((string) ($item['resumen_bodegas_raw'] ?? ''));
         $enPrincipal = str_contains($bodegas, 'bod-01') || str_contains($bodegas, 'principal');
         $enSecundaria = str_contains($bodegas, 'bod-02') || str_contains($bodegas, 'secundaria');
 
         if ($enPrincipal) {
-            $catalogoPrincipal[] = $item;
+            $itemPrincipal = $item;
+            if (array_key_exists('BOD-01', $stocksPorBodega)) {
+                $itemPrincipal['stock'] = (string) $stocksPorBodega['BOD-01'];
+            }
+            $catalogoPrincipal[] = $itemPrincipal;
         }
         if ($enSecundaria) {
-            $catalogoSecundaria[] = $item;
+            $itemSecundaria = $item;
+            if (array_key_exists('BOD-02', $stocksPorBodega)) {
+                $itemSecundaria['stock'] = (string) $stocksPorBodega['BOD-02'];
+            }
+            $catalogoSecundaria[] = $itemSecundaria;
         }
     }
 

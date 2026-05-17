@@ -5,6 +5,7 @@ $mensajeError = $mensajeError ?? '';
 $formularioSalida = $formularioSalida ?? [
     'codigo_factura' => '',
     'id_bodega' => '',
+    'id_bodega_destino' => '',
     'motivo_salida' => 'normal',
     'total_factura' => '$0',
     'detalles' => [],
@@ -97,6 +98,21 @@ $paginacion = $paginacion ?? [
                         <option value="normal" <?= $formularioSalida['motivo_salida'] === 'normal' ? 'selected' : '' ?>>Normal</option>
                         <option value="devolucion" <?= $formularioSalida['motivo_salida'] === 'devolucion' ? 'selected' : '' ?>>Devolucion</option>
                         <option value="fallo" <?= $formularioSalida['motivo_salida'] === 'fallo' ? 'selected' : '' ?>>Fallo</option>
+                        <option value="traslado" <?= $formularioSalida['motivo_salida'] === 'traslado' ? 'selected' : '' ?>>Traslado</option>
+                    </select>
+                </div>
+
+                <div class="campo" id="grupo-salida-bodega-destino" <?= $formularioSalida['motivo_salida'] === 'traslado' ? '' : 'hidden' ?>>
+                    <label for="salida-bodega-destino">Bodega destino</label>
+                    <select id="salida-bodega-destino" name="id_bodega_destino" <?= $formularioSalida['motivo_salida'] === 'traslado' ? 'required' : '' ?>>
+                        <?php foreach ($formularioSalida['bodegas'] as $bodega): ?>
+                            <option
+                                value="<?= htmlspecialchars((string) $bodega['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                <?= ($formularioSalida['id_bodega_destino'] ?? '') === (string) $bodega['id'] ? 'selected' : '' ?>
+                            >
+                                <?= htmlspecialchars($bodega['codigo'] . ' - ' . $bodega['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
             </div>
@@ -170,7 +186,9 @@ $paginacion = $paginacion ?? [
 
             <div class="fila-acciones">
                 <?php if (!isset($puedeRegistrarMovimientos) || $puedeRegistrarMovimientos): ?>
-                    <button type="submit" form="form-salidas" class="boton-principal">Registrar salida</button>
+                    <button type="submit" form="form-salidas" class="boton-principal" id="salida-boton-guardar">
+                        <?= $formularioSalida['motivo_salida'] === 'traslado' ? 'Trasladar productos' : 'Registrar salida' ?>
+                    </button>
                 <?php endif; ?>
             </div>
         </section>

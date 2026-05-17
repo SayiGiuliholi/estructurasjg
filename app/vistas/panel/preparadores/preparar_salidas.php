@@ -22,6 +22,7 @@ function prepararDatosModuloSalidas(array $contexto = []): array
     $formulario = $contexto['formularioSalida'] ?? [
         'codigo_factura' => '',
         'id_bodega' => '',
+        'id_bodega_destino' => '',
         'motivo_salida' => 'normal',
         'detalles' => [[
             'codigo' => '',
@@ -98,6 +99,17 @@ function prepararDatosModuloSalidas(array $contexto = []): array
                 $fechaRegistro = date('d/m/Y', $marcaTiempo);
             }
 
+            $motivoSalida = strtolower(trim((string) ($fila['motivo_salida'] ?? '')));
+            if ($motivoSalida === '') {
+                $descripcionMovimiento = strtolower(trim((string) ($fila['descripcion_movimiento'] ?? '')));
+                if (str_contains($descripcionMovimiento, 'traslado')) {
+                    $motivoSalida = 'traslado';
+                }
+            }
+            $motivoSalidaVista = $motivoSalida !== ''
+                ? ucfirst($motivoSalida)
+                : 'Normal';
+
             return [
                 'factura' => (string) ($fila['factura'] ?? ''),
                 'hora_registro' => $horaRegistro,
@@ -105,7 +117,7 @@ function prepararDatosModuloSalidas(array $contexto = []): array
                 'codigo' => (string) ($fila['codigo_producto'] ?? ''),
                 'producto' => (string) ($fila['producto'] ?? ''),
                 'cantidad' => (string) ((int) ($fila['cantidad'] ?? 0)),
-                'motivo_salida' => (string) ($fila['motivo_salida'] ?? 'normal'),
+                'motivo_salida' => $motivoSalidaVista,
                 'total' => $formatearMoneda((float) ($fila['total'] ?? 0)),
                 'bodega' => (string) ($fila['bodega'] ?? ''),
             ];
@@ -123,6 +135,7 @@ function prepararDatosModuloSalidas(array $contexto = []): array
         'formularioSalida' => [
             'codigo_factura' => (string) ($formulario['codigo_factura'] ?? ''),
             'id_bodega' => (string) ($formulario['id_bodega'] ?? ''),
+            'id_bodega_destino' => (string) ($formulario['id_bodega_destino'] ?? ''),
             'motivo_salida' => (string) ($formulario['motivo_salida'] ?? 'normal'),
             'detalles' => $detallesNormalizados,
             'total_factura' => $formatearMoneda($totalFactura),

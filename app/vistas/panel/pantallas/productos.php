@@ -6,9 +6,11 @@ require_once __DIR__ . '/../preparadores/preparar_productos.php';
 require_once __DIR__ . '/../../../configuracion/rutas.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProducto.php';
 require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
+require_once __DIR__ . '/../../../modelos/RepositorioAuditoria.php';
 
 $repositorioProducto = new RepositorioProducto();
 $repositorioProveedor = new RepositorioProveedor();
+$repositorioAuditoria = new RepositorioAuditoria();
 $puedeGestionProductos = ((int) ($permisos['registrar_productos'] ?? 0) === 1)
     || ((int) ($permisos['modificar_productos'] ?? 0) === 1);
 
@@ -96,6 +98,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                         'precio' => $precio,
                     ]);
                     $mensajeExito = 'Producto actualizado correctamente.';
+                    $repositorioAuditoria->registrarEvento([
+                        'id_usuario' => (int) ($autenticacion['id_usuario'] ?? 0),
+                        'usuario' => (string) ($autenticacion['usuario'] ?? ''),
+                        'modulo' => 'productos',
+                        'accion' => 'actualizar_producto',
+                        'entidad' => 'producto',
+                        'id_entidad' => $idProducto,
+                        'detalle' => [
+                            'codigo' => $codigo,
+                            'descripcion' => $descripcion,
+                            'id_proveedor' => $idProveedor,
+                            'precio' => $precio,
+                        ],
+                    ]);
                 } catch (Throwable $error) {
                     $mensajeError = 'No se pudo actualizar el producto. Verifica que el codigo no este repetido.';
                     $idProductoEdicion = $idProducto;
@@ -108,6 +124,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         try {
             $repositorioProducto->cambiarEstado($idProducto, false);
             $mensajeExito = 'Producto desactivado correctamente.';
+            $repositorioAuditoria->registrarEvento([
+                'id_usuario' => (int) ($autenticacion['id_usuario'] ?? 0),
+                'usuario' => (string) ($autenticacion['usuario'] ?? ''),
+                'modulo' => 'productos',
+                'accion' => 'desactivar_producto',
+                'entidad' => 'producto',
+                'id_entidad' => $idProducto,
+            ]);
         } catch (Throwable $error) {
             $mensajeError = 'No se pudo desactivar el producto.';
         }
@@ -117,6 +141,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         try {
             $repositorioProducto->cambiarEstado($idProducto, true);
             $mensajeExito = 'Producto activado correctamente.';
+            $repositorioAuditoria->registrarEvento([
+                'id_usuario' => (int) ($autenticacion['id_usuario'] ?? 0),
+                'usuario' => (string) ($autenticacion['usuario'] ?? ''),
+                'modulo' => 'productos',
+                'accion' => 'activar_producto',
+                'entidad' => 'producto',
+                'id_entidad' => $idProducto,
+            ]);
         } catch (Throwable $error) {
             $mensajeError = 'No se pudo activar el producto.';
         }
