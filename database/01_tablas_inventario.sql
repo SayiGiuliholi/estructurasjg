@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS productos (
     stock INT NOT NULL DEFAULT 0,
     precio DECIMAL(10,2) NOT NULL,
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado TINYINT(1) NOT NULL DEFAULT 1,
     CONSTRAINT uk_productos_codigo UNIQUE (codigo),
     CONSTRAINT fk_productos_proveedor
         FOREIGN KEY (id_proveedor)
@@ -172,7 +173,7 @@ CREATE TABLE IF NOT EXISTS ventas (
     id_bodega INT NOT NULL,
     id_usuario INT NOT NULL,
     descripcion VARCHAR(30) NOT NULL,
-    motivo_salida ENUM('normal', 'devolucion', 'fallo') NOT NULL DEFAULT 'normal',
+    motivo_salida ENUM('normal', 'devolucion', 'fallo', 'traslado') NOT NULL DEFAULT 'normal',
     cantidad INT NOT NULL,
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_ventas_bodega
@@ -207,3 +208,21 @@ CREATE TABLE IF NOT EXISTS detalle_ventas (
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
+-- ------------------------------------------------------------
+-- Auditoria de eventos
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS auditoria_eventos (
+    id_evento BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    fecha_evento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    id_usuario INT NOT NULL,
+    usuario VARCHAR(120) NOT NULL,
+    modulo VARCHAR(80) NOT NULL,
+    accion VARCHAR(120) NOT NULL,
+    entidad VARCHAR(120) NOT NULL,
+    id_entidad INT NULL,
+    detalle_json JSON NULL,
+    INDEX idx_fecha_evento (fecha_evento),
+    INDEX idx_usuario (id_usuario),
+    INDEX idx_modulo_accion (modulo, accion)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
