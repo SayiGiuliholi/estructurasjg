@@ -138,10 +138,12 @@ $formularioUsuario = [
 if (isset($_GET['editar_usuario'])) {
     $idUsuarioEditar = (int) $_GET['editar_usuario'];
     if ($idUsuarioEditar > 0) {
-        if (!$esSuperadminSesion && esUsuarioAdministrador($repositorioUsuario, $idUsuarioEditar)) {
+        $usuarioEditar = $repositorioUsuario->obtenerUsuarioPorId($idUsuarioEditar);
+        if ($usuarioEditar !== null && esRolSuperadmin($repositorioUsuario, (int) ($usuarioEditar['id_rol'] ?? 0))) {
+            $mensajeError = 'El usuario Superadmin es protegido y no se puede editar desde el sistema.';
+        } elseif (!$esSuperadminSesion && esUsuarioAdministrador($repositorioUsuario, $idUsuarioEditar)) {
             $mensajeError = 'No tienes permiso para editar usuarios administradores.';
         } else {
-        $usuarioEditar = $repositorioUsuario->obtenerUsuarioPorId($idUsuarioEditar);
         if ($usuarioEditar !== null) {
             $formularioUsuario = [
                 'id_usuario' => (int) ($usuarioEditar['id_usuario'] ?? 0),
@@ -179,6 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($nombre === '' || $usuario === '' || $idRol <= 0) {
             $mensajeError = 'Completa nombre, usuario y rol para guardar el usuario.';
+        } elseif (esRolSuperadmin($repositorioUsuario, $idRol)) {
+            $mensajeError = 'No se permite asignar el rol Superadmin desde el sistema.';
         } elseif (
             !$esSuperadminSesion
             && (
@@ -264,10 +268,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mensajeError = 'Como Administrador solo puedes modificar permisos del rol Empleado.';
         } else {
             try {
+                $permisoRegistrarMovimientos = isset($_POST['registrar_movimientos']) ? 1 : 0;
                 $repositorioUsuario->actualizarPermisosRol($idRolPermiso, [
-                    'registrar_productos' => isset($_POST['registrar_productos']) ? 1 : 0,
+                    'registrar_productos' => $permisoRegistrarMovimientos,
                     'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
-                    'registrar_movimientos' => isset($_POST['registrar_movimientos']) ? 1 : 0,
+                    'registrar_movimientos' => $permisoRegistrarMovimientos,
                     'consultar_movimientos' => isset($_POST['consultar_movimientos']) ? 1 : 0,
                     'gestionar_roles' => $esRolEmpleadoObjetivo ? 0 : (isset($_POST['gestionar_roles']) ? 1 : 0),
                     'configuracion' => $esRolEmpleadoObjetivo ? 0 : (isset($_POST['configuracion']) ? 1 : 0),
@@ -283,9 +288,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'entidad' => 'rol',
                     'id_entidad' => $idRolPermiso,
                     'detalle' => [
-                        'registrar_productos' => isset($_POST['registrar_productos']) ? 1 : 0,
+                        'registrar_productos' => $permisoRegistrarMovimientos,
                         'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
-                        'registrar_movimientos' => isset($_POST['registrar_movimientos']) ? 1 : 0,
+                        'registrar_movimientos' => $permisoRegistrarMovimientos,
                         'consultar_movimientos' => isset($_POST['consultar_movimientos']) ? 1 : 0,
                         'gestionar_roles' => isset($_POST['gestionar_roles']) ? 1 : 0,
                         'configuracion' => isset($_POST['configuracion']) ? 1 : 0,

@@ -1,8 +1,10 @@
 (function () {
+    var modalEdicion = document.getElementById('productos-modal-edicion');
+    var botonesCerrarModal = Array.prototype.slice.call(document.querySelectorAll('[data-cerrar-modal-edicion]'));
+    var inputPrecioEdicion = document.getElementById('prod-precio-editar');
     var formularioFiltros = document.getElementById('productos-filtros-form');
     var inputBuscar = document.getElementById('productos-filtro-buscar');
     var selectProveedor = document.getElementById('productos-filtro-proveedor');
-    var inputFecha = document.getElementById('productos-filtro-fecha');
     var selectBodega = document.getElementById('productos-filtro-bodega');
     var tablas = [
         document.getElementById('tabla-historial-productos-principal'),
@@ -12,7 +14,56 @@
     var filaVaciaPrincipal = document.getElementById('productos-historial-vacio-principal');
     var filaVaciaSecundaria = document.getElementById('productos-historial-vacio-secundaria');
 
-    if (tablas.length === 0 || !formularioFiltros || !inputBuscar || !selectProveedor || !inputFecha || !selectBodega) {
+    function cerrarModalEdicion() {
+        if (!modalEdicion) {
+            return;
+        }
+
+        modalEdicion.classList.remove('productos-modal-visible');
+        modalEdicion.setAttribute('aria-hidden', 'true');
+    }
+
+    if (modalEdicion) {
+        botonesCerrarModal.forEach(function (boton) {
+            boton.addEventListener('click', cerrarModalEdicion);
+        });
+
+        modalEdicion.addEventListener('click', function (evento) {
+            if (evento.target === modalEdicion) {
+                cerrarModalEdicion();
+            }
+        });
+
+        document.addEventListener('keydown', function (evento) {
+            if (evento.key === 'Escape' && modalEdicion.classList.contains('productos-modal-visible')) {
+                cerrarModalEdicion();
+            }
+        });
+    }
+
+    function formatearMilesDesdeDigitos(digitos) {
+        if (!digitos) {
+            return '';
+        }
+
+        return String(digitos).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function formatearPrecioEdicion() {
+        if (!inputPrecioEdicion) {
+            return;
+        }
+
+        var digitos = String(inputPrecioEdicion.value || '').replace(/\D/g, '');
+        inputPrecioEdicion.value = formatearMilesDesdeDigitos(digitos);
+    }
+
+    if (inputPrecioEdicion) {
+        inputPrecioEdicion.addEventListener('input', formatearPrecioEdicion);
+        formatearPrecioEdicion();
+    }
+
+    if (tablas.length === 0 || !formularioFiltros || !inputBuscar || !selectProveedor || !selectBodega) {
         return;
     }
 
@@ -31,24 +82,10 @@
             .trim();
     }
 
-    function fechaInputARegistro(fechaInput) {
-        if (!fechaInput || fechaInput.indexOf('-') === -1) {
-            return '';
-        }
-
-        var partes = fechaInput.split('-');
-        if (partes.length !== 3) {
-            return '';
-        }
-
-        return partes[2] + '/' + partes[1] + '/' + partes[0];
-    }
-
     function aplicarFiltros() {
         var termino = normalizar(inputBuscar.value);
         var esBusquedaCodigo = /^\d+$/.test(termino);
         var proveedor = normalizar(selectProveedor.value);
-        var fechaSeleccionada = fechaInputARegistro(String(inputFecha.value || '').trim());
         var bodegaSeleccionada = normalizar(selectBodega.value);
 
         filasHistorial.forEach(function (bloqueTabla) {
@@ -57,15 +94,13 @@
                 var textoFila = normalizar((fila.textContent || '') + ' ' + (fila.getAttribute('data-busqueda') || ''));
                 var codigoFila = normalizar(fila.getAttribute('data-codigo') || '');
                 var proveedorFila = normalizar(fila.getAttribute('data-proveedor') || '');
-                var fechaFila = String(fila.getAttribute('data-fecha') || '').trim();
                 var bodegaFila = normalizar(fila.getAttribute('data-bodega') || '');
 
                 var coincideTexto = termino === ''
                     || (esBusquedaCodigo ? codigoFila === termino : textoFila.indexOf(termino) !== -1);
                 var coincideProveedor = proveedor === '' || proveedorFila === proveedor;
-                var coincideFecha = fechaSeleccionada === '' || fechaFila === fechaSeleccionada;
                 var coincideBodega = bodegaSeleccionada === '' || bodegaFila === bodegaSeleccionada;
-                var mostrar = coincideTexto && coincideProveedor && coincideFecha && coincideBodega;
+                var mostrar = coincideTexto && coincideProveedor && coincideBodega;
 
                 fila.hidden = !mostrar;
                 if (mostrar) {
@@ -90,14 +125,13 @@
 
     inputBuscar.addEventListener('input', aplicarFiltros);
     selectProveedor.addEventListener('change', aplicarFiltros);
-    inputFecha.addEventListener('change', aplicarFiltros);
     selectBodega.addEventListener('change', aplicarFiltros);
     formularioFiltros.addEventListener('submit', function (evento) {
         evento.preventDefault();
         aplicarFiltros();
     });
 
-    [inputBuscar, selectProveedor, inputFecha, selectBodega].forEach(function (control) {
+    [inputBuscar, selectProveedor, selectBodega].forEach(function (control) {
         control.addEventListener('keydown', function (evento) {
             if (evento.key !== 'Enter') {
                 return;

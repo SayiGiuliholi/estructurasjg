@@ -130,6 +130,8 @@
             return;
         }
 
+        var codigoSolicitado = codigo;
+        fila.dataset.codigoPendiente = codigoSolicitado;
         var url = apiProducto + '?codigo=' + encodeURIComponent(codigo);
 
         fetch(url, { headers: { 'Accept': 'application/json' } })
@@ -144,6 +146,16 @@
             .then(function (datos) {
                 if (!datos.producto) {
                     return;
+                }
+
+                var codigoActual = String(inputCodigo.value || '').trim();
+                if (codigoActual !== codigoSolicitado || (fila.dataset.codigoPendiente || '') !== codigoSolicitado) {
+                    return;
+                }
+
+                var codigoRespuesta = String(datos.producto.codigo || '').trim();
+                if (codigoRespuesta === '' || codigoRespuesta !== codigoSolicitado) {
+                    throw new Error('Respuesta inconsistente de producto para el codigo solicitado.');
                 }
 
                 var descripcion = String(datos.producto.descripcion || '').trim();
@@ -165,6 +177,7 @@
                 // Para productos existentes solo se permite cambiar cantidad.
                 inputDescripcion.readOnly = true;
                 inputPrecio.readOnly = true;
+                fila.dataset.codigoAutocompletado = codigoSolicitado;
 
                 if (selectProveedor && idProveedorProducto !== '' && String(selectProveedor.value || '').trim() === '') {
                     selectProveedor.value = idProveedorProducto;
@@ -173,6 +186,10 @@
                 recalcularFactura();
             })
             .catch(function () {
+                var codigoActual = String(inputCodigo.value || '').trim();
+                if (codigoActual !== codigoSolicitado) {
+                    return;
+                }
                 // Si no existe el codigo, se permite captura manual de descripcion y precio.
                 inputDescripcion.readOnly = false;
                 inputPrecio.readOnly = false;
@@ -233,6 +250,17 @@
             if (!filaCodigo) {
                 return;
             }
+
+            var inputDescripcion = filaCodigo.querySelector('.js-entrada-descripcion');
+            var inputPrecio = filaCodigo.querySelector('.js-precio');
+            if (inputDescripcion) {
+                inputDescripcion.readOnly = false;
+            }
+            if (inputPrecio) {
+                inputPrecio.readOnly = false;
+            }
+            filaCodigo.dataset.codigoPendiente = '';
+            filaCodigo.dataset.codigoAutocompletado = '';
 
             if (temporizadorCodigo) {
                 clearTimeout(temporizadorCodigo);

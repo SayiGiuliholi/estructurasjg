@@ -12,6 +12,11 @@ $auditoriaEventos = $auditoriaEventos ?? [];
 $esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
 $seccionConfiguracion = trim((string) ($_GET['seccion'] ?? 'gestion'));
 $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria';
+$accionPostConfiguracion = trim((string) ($_POST['accion'] ?? ''));
+$solicitaCrearUsuario = isset($_GET['crear_usuario']) && (int) ($_GET['crear_usuario'] ?? 0) === 1;
+$estaEditandoUsuario = (int) ($formularioUsuario['id_usuario'] ?? 0) > 0;
+$mantenerModalUsuarioPorPost = (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') && $accionPostConfiguracion === 'guardar_usuario';
+$mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEditandoUsuario || $mantenerModalUsuarioPorPost);
 ?>
 <div class="contenido-personalizado">
     <article class="tarjeta bloque" style="padding: 12px 16px;">
@@ -38,92 +43,98 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
     <?php endif; ?>
 
     <?php if (!$esSeccionAuditoria): ?>
-    <article class="tarjeta bloque">
-        <div class="cabecera-modulo">
-            <div>
-                <h3 class="subtitulo">Crear y modificar usuarios</h3>
-                <p>Desde aqui administras cuentas de empleados, rol asignado y estado del usuario.</p>
-            </div>
-        </div>
-
-        <form method="post" class="formulario-grid">
-            <?= csrfCampoOculto() ?>
-            <input type="hidden" name="accion" value="guardar_usuario">
-            <input type="hidden" name="id_usuario" value="<?= htmlspecialchars((string) $formularioUsuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?>">
-
-            <div class="campo">
-                <label for="cfg-nombre">Nombre completo</label>
-                <input
-                    id="cfg-nombre"
-                    name="nombre"
-                    type="text"
-                    required
-                    value="<?= htmlspecialchars((string) $formularioUsuario['nombre'], ENT_QUOTES, 'UTF-8') ?>"
-                >
-            </div>
-
-            <div class="campo">
-                <label for="cfg-usuario">Usuario</label>
-                <input
-                    id="cfg-usuario"
-                    name="usuario"
-                    type="text"
-                    required
-                    value="<?= htmlspecialchars((string) $formularioUsuario['usuario'], ENT_QUOTES, 'UTF-8') ?>"
-                >
-            </div>
-
-            <div class="campo">
-                <label for="cfg-contrasena">
-                    <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contraseña (opcional para cambiar)' : 'Contraseña' ?>
-                </label>
-                <input id="cfg-contrasena" name="contrasena" type="password" <?= (int) $formularioUsuario['id_usuario'] > 0 ? '' : 'required' ?>>
-            </div>
-
-            <div class="campo">
-                <label for="cfg-rol">Rol</label>
-                <select id="cfg-rol" name="id_rol" required>
-                    <?php foreach ($rolesOpciones as $rol): ?>
-                        <option
-                            value="<?= htmlspecialchars((string) $rol['id'], ENT_QUOTES, 'UTF-8') ?>"
-                            <?= (string) $formularioUsuario['id_rol'] === (string) $rol['id'] ? 'selected' : '' ?>
-                        >
-                            <?= htmlspecialchars((string) $rol['nombre'], ENT_QUOTES, 'UTF-8') ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="control-linea campo-amplio control-linea-estado">
+    <div class="productos-modal-overlay<?= $mostrarModalUsuario ? ' productos-modal-visible' : '' ?>" id="configuracion-modal-usuario" aria-hidden="<?= $mostrarModalUsuario ? 'false' : 'true' ?>">
+        <article class="productos-modal tarjeta bloque" role="dialog" aria-modal="true" aria-labelledby="configuracion-modal-usuario-titulo">
+            <div class="cabecera-modulo">
                 <div>
-                    <strong>Usuario activo</strong>
-                    <span>ON: puede iniciar sesion. OFF: usuario bloqueado.</span>
-                    <div class="control-estado-usuario">
-                        <span class="etiqueta-estado-usuario <?= (int) $formularioUsuario['estado'] === 1 ? 'activo' : 'inactivo' ?>">
-                            <?= (int) $formularioUsuario['estado'] === 1 ? 'Activo' : 'Deshabilitado' ?>
-                        </span>
-                        <label class="switch switch-destacado" title="Cambiar estado de usuario">
-                            <input type="checkbox" name="estado" <?= (int) $formularioUsuario['estado'] === 1 ? 'checked' : '' ?>>
-                            <span class="switch-slider"></span>
-                        </label>
+                    <h3 class="subtitulo" id="configuracion-modal-usuario-titulo"><?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Modificar usuario' : 'Crear usuario' ?></h3>
+                    <p>Desde aqui administras cuentas de empleados, rol asignado y estado del usuario.</p>
+                </div>
+                <a class="boton-fantasma productos-modal-cerrar" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion']), ENT_QUOTES, 'UTF-8') ?>">Cancelar</a>
+            </div>
+
+            <form method="post" class="formulario-grid">
+                <?= csrfCampoOculto() ?>
+                <input type="hidden" name="accion" value="guardar_usuario">
+                <input type="hidden" name="id_usuario" value="<?= htmlspecialchars((string) $formularioUsuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?>">
+
+                <div class="campo">
+                    <label for="cfg-nombre">Nombre completo</label>
+                    <input
+                        id="cfg-nombre"
+                        name="nombre"
+                        type="text"
+                        required
+                        value="<?= htmlspecialchars((string) $formularioUsuario['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="cfg-usuario">Usuario</label>
+                    <input
+                        id="cfg-usuario"
+                        name="usuario"
+                        type="text"
+                        required
+                        value="<?= htmlspecialchars((string) $formularioUsuario['usuario'], ENT_QUOTES, 'UTF-8') ?>"
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="cfg-contrasena">
+                        <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contrasena (opcional para cambiar)' : 'Contrasena' ?>
+                    </label>
+                    <input id="cfg-contrasena" name="contrasena" type="password" <?= (int) $formularioUsuario['id_usuario'] > 0 ? '' : 'required' ?>>
+                </div>
+
+                <div class="campo">
+                    <label for="cfg-rol">Rol</label>
+                    <select id="cfg-rol" name="id_rol" required>
+                        <?php foreach ($rolesOpciones as $rol): ?>
+                            <?php if (strtolower(trim((string) ($rol['nombre'] ?? ''))) === 'superadmin') { continue; } ?>
+                            <option
+                                value="<?= htmlspecialchars((string) $rol['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                <?= (string) $formularioUsuario['id_rol'] === (string) $rol['id'] ? 'selected' : '' ?>
+                            >
+                                <?= htmlspecialchars((string) $rol['nombre'], ENT_QUOTES, 'UTF-8') ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="control-linea campo-amplio control-linea-estado">
+                    <div>
+                        <strong>Usuario activo</strong>
+                        <span>ON: puede iniciar sesion. OFF: usuario bloqueado.</span>
+                        <div class="control-estado-usuario">
+                            <span class="etiqueta-estado-usuario <?= (int) $formularioUsuario['estado'] === 1 ? 'activo' : 'inactivo' ?>">
+                                <?= (int) $formularioUsuario['estado'] === 1 ? 'Activo' : 'Deshabilitado' ?>
+                            </span>
+                            <label class="switch switch-destacado" title="Cambiar estado de usuario">
+                                <input type="checkbox" name="estado" <?= (int) $formularioUsuario['estado'] === 1 ? 'checked' : '' ?>>
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="fila-acciones campo-amplio">
-                <button type="submit" class="boton-principal">
-                    <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Actualizar usuario' : 'Crear usuario' ?>
-                </button>
-                <button type="reset" class="boton-fantasma">Limpiar</button>
-            </div>
-        </form>
-    </article>
+                <div class="fila-acciones campo-amplio">
+                    <button type="submit" class="boton-principal">
+                        <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Actualizar usuario' : 'Crear usuario' ?>
+                    </button>
+                </div>
+            </form>
+        </article>
+    </div>
 
     <article class="tarjeta tarjeta-tabla">
         <div class="cabecera-modulo" style="padding: 22px 22px 0;">
             <div>
                 <h3 class="subtitulo">Usuarios del sistema</h3>
                 <p>Listado de cuentas registradas para operar el sistema.</p>
+            </div>
+            <div class="fila-acciones">
+                <a class="boton-principal" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion', 'crear_usuario' => 1]), ENT_QUOTES, 'UTF-8') ?>">Crear usuario</a>
             </div>
         </div>
 
@@ -149,8 +160,10 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
 
                     <?php foreach ($usuarios as $usuario): ?>
                         <?php
-                        $esUsuarioAdministrador = strtolower((string) ($usuario['rol'] ?? '')) === 'administrador';
-                        $puedeEditarUsuario = $esSuperadminVista || !$esUsuarioAdministrador;
+                        $rolUsuario = strtolower(trim((string) ($usuario['rol'] ?? '')));
+                        $esUsuarioSuperadmin = $rolUsuario === 'superadmin';
+                        $esUsuarioAdministrador = $rolUsuario === 'administrador';
+                        $puedeEditarUsuario = !$esUsuarioSuperadmin && ($esSuperadminVista || !$esUsuarioAdministrador);
                         ?>
                         <tr>
                             <td><?= htmlspecialchars((string) $usuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -163,7 +176,7 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
                                 <?php if ($puedeEditarUsuario): ?>
                                     <a
                                         class="boton-fantasma"
-                                        href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'editar_usuario' => (int) $usuario['id_usuario']]), ENT_QUOTES, 'UTF-8') ?>"
+                                        href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion', 'editar_usuario' => (int) $usuario['id_usuario']]), ENT_QUOTES, 'UTF-8') ?>"
                                     >Editar</a>
                                 <?php else: ?>
                                     <span class="boton-fantasma" style="opacity:.6; cursor:not-allowed;">Protegido</span>
@@ -186,9 +199,8 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
 
         <?php
         $ayudaPermisos = [
-            'registrar_productos' => 'Crear productos nuevos y cargarlos al inventario.',
             'modificar_productos' => 'Editar datos, precio o estado de productos.',
-            'registrar_movimientos' => 'Registrar entradas y salidas de inventario.',
+            'registrar_movimientos' => 'Registrar movimientos de inventario (incluye altas operativas y entradas/salidas).',
             'consultar_movimientos' => 'Ver historial de entradas, salidas y productos.',
             'gestionar_roles' => 'Cambiar permisos por rol.',
             'configuracion' => 'Entrar al modulo de configuracion.',
@@ -223,13 +235,6 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
 
                 <p class="nota-ayuda-permisos">Marca solo lo que este rol puede hacer.</p>
                 <div class="permisos-grid" style="margin-top: 12px;">
-                    <label class="permiso-item">
-                        <input type="checkbox" name="registrar_productos" <?= $rol['permisos']['registrar_productos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
-                        <span class="permiso-texto">
-                            <strong>Registrar productos</strong>
-                            <small><?= htmlspecialchars($ayudaPermisos['registrar_productos'], ENT_QUOTES, 'UTF-8') ?></small>
-                        </span>
-                    </label>
                     <label class="permiso-item">
                         <input type="checkbox" name="modificar_productos" <?= $rol['permisos']['modificar_productos'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                         <span class="permiso-texto">
@@ -318,4 +323,3 @@ $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria
         </article>
     <?php endif; ?>
 </div>
-

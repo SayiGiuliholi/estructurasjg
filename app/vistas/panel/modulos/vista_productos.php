@@ -25,6 +25,7 @@ $paginacion = $paginacion ?? [
     'porPagina' => 20,
     'opcionesPorPagina' => [10, 20, 50],
 ];
+$mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos) && (($idProductoEdicion ?? null) !== null);
 ?>
 <div class="resumen-kpis">
     <?php foreach ($resumenIndicadores as $indicador): ?>
@@ -35,23 +36,28 @@ $paginacion = $paginacion ?? [
     <?php endforeach; ?>
 </div>
 
-<?php if (!isset($puedeGestionProductos) || $puedeGestionProductos): ?>
-<article class="tarjeta bloque">
-    <div class="cabecera-modulo">
-        <div>
-            <h3 class="subtitulo">Edicion de producto</h3>
-        </div>
-    </div>
-
-    <?php if (($mensajeExito ?? '') !== ''): ?>
+<?php if (($mensajeExito ?? '') !== ''): ?>
+    <article class="tarjeta bloque">
         <p class="nota-exito"><?= htmlspecialchars((string) $mensajeExito, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+    </article>
+<?php endif; ?>
 
-    <?php if (($mensajeError ?? '') !== ''): ?>
+<?php if (($mensajeError ?? '') !== ''): ?>
+    <article class="tarjeta bloque">
         <p class="nota-error"><?= htmlspecialchars((string) $mensajeError, ENT_QUOTES, 'UTF-8') ?></p>
-    <?php endif; ?>
+    </article>
+<?php endif; ?>
 
-    <?php if (($idProductoEdicion ?? null) !== null): ?>
+<?php if (!isset($puedeGestionProductos) || $puedeGestionProductos): ?>
+<div class="productos-modal-overlay<?= $mostrarModalEdicion ? ' productos-modal-visible' : '' ?>" id="productos-modal-edicion" aria-hidden="<?= $mostrarModalEdicion ? 'false' : 'true' ?>">
+    <article class="productos-modal tarjeta bloque" role="dialog" aria-modal="true" aria-labelledby="productos-modal-titulo">
+        <div class="cabecera-modulo">
+            <div>
+                <h3 class="subtitulo" id="productos-modal-titulo">Edicion de producto</h3>
+            </div>
+            <button type="button" class="boton-fantasma productos-modal-cerrar" data-cerrar-modal-edicion>Cancelar</button>
+        </div>
+
         <form class="formulario-grid" method="post">
             <?= csrfCampoOculto() ?>
             <input type="hidden" name="id_producto" value="<?= htmlspecialchars((string) ($fichaProducto['id_producto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
@@ -83,16 +89,14 @@ $paginacion = $paginacion ?? [
             </div>
             <div class="campo">
                 <label for="prod-precio-editar">Precio</label>
-                <input id="prod-precio-editar" name="precio" type="text" inputmode="numeric" required value="<?= htmlspecialchars((string) ($fichaProducto['precio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                <input id="prod-precio-editar" name="precio" type="text" inputmode="numeric" required value="<?= htmlspecialchars((string) ($fichaProducto['precio'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
             </div>
             <div class="fila-acciones campo campo-acciones">
                 <button type="submit" name="accion" value="actualizar" class="boton-principal">Guardar cambios</button>
             </div>
         </form>
-    <?php else: ?>
-        <p class="nota-ayuda">Selecciona "Editar" en la tabla para cargar un producto.</p>
-    <?php endif; ?>
-</article>
+    </article>
+</div>
 <?php else: ?>
 <article class="tarjeta bloque">
     <p class="nota-modulo">Modo solo lectura: puedes consultar productos, pero no editarlos ni cambiar su estado.</p>
@@ -134,11 +138,6 @@ $paginacion = $paginacion ?? [
                     </option>
                 <?php endforeach; ?>
             </select>
-        </div>
-
-        <div class="campo">
-            <label for="productos-filtro-fecha">Fecha</label>
-            <input id="productos-filtro-fecha" type="date">
         </div>
 
         <div class="campo">
@@ -250,9 +249,6 @@ $paginacion = $paginacion ?? [
                     </option>
                 <?php endforeach; ?>
             </select>
-            <span class="paginacion-resumen">
-                <?= htmlspecialchars((string) $paginacion['totalRegistros'], ENT_QUOTES, 'UTF-8') ?> registros
-            </span>
         </form>
 
         <?php if ((int) $paginacion['totalPaginas'] > 1): ?>

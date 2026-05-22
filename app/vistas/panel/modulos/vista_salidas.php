@@ -312,6 +312,9 @@ $paginacion = $paginacion ?? [
                     </option>
                 <?php endforeach; ?>
             </select>
+            <span class="paginacion-resumen">
+                <?= htmlspecialchars((string) $paginacion['totalRegistros'], ENT_QUOTES, 'UTF-8') ?> registros
+            </span>
         </form>
 
         <?php if ((int) $paginacion['totalPaginas'] > 1): ?>

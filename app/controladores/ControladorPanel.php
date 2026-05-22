@@ -32,11 +32,11 @@ final class ControladorPanel
             'entradas', 'salidas' => $this->permisoActivo($permisos, 'registrar_movimientos')
                 || $this->permisoActivo($permisos, 'consultar_movimientos'),
 
-            'productos' => $this->permisoActivo($permisos, 'registrar_productos')
+            'productos' => $this->permisoActivo($permisos, 'registrar_movimientos')
                 || $this->permisoActivo($permisos, 'modificar_productos')
                 || $this->permisoActivo($permisos, 'consultar_movimientos'),
 
-            'proveedores' => $this->permisoActivo($permisos, 'registrar_productos')
+            'proveedores' => $this->permisoActivo($permisos, 'registrar_movimientos')
                 || $this->permisoActivo($permisos, 'modificar_productos')
                 || $this->permisoActivo($permisos, 'consultar_movimientos')
                 || $this->permisoActivo($permisos, 'configuracion'),

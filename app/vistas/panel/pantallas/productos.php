@@ -12,8 +12,7 @@ require_once __DIR__ . '/../../../ayudantes/csrf.php';
 $repositorioProducto = new RepositorioProducto();
 $repositorioProveedor = new RepositorioProveedor();
 $repositorioAuditoria = new RepositorioAuditoria();
-$puedeGestionProductos = ((int) ($permisos['registrar_productos'] ?? 0) === 1)
-    || ((int) ($permisos['modificar_productos'] ?? 0) === 1);
+$puedeGestionProductos = ((int) ($permisos['modificar_productos'] ?? 0) === 1);
 
 $mensajeExito = '';
 $mensajeError = '';

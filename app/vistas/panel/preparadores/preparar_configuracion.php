@@ -43,14 +43,15 @@ function prepararDatosModuloConfiguracion(
         static function (array $rol): array {
             $nombreRol = strtolower((string) ($rol['nombre'] ?? ''));
             $esRolEmpleado = $nombreRol === 'empleado';
+            $puedeRegistrarMovimientos = (int) ($rol['p_registrar_movimientos'] ?? 0) === 1;
 
             return [
                 'id_rol' => (int) ($rol['id_rol'] ?? 0),
                 'nombre' => (string) ($rol['nombre'] ?? ''),
                 'permisos' => [
-                    'registrar_productos' => (int) ($rol['p_registrar_productos'] ?? 0) === 1,
+                    'registrar_productos' => $puedeRegistrarMovimientos,
                     'modificar_productos' => (int) ($rol['p_modificar_productos'] ?? 0) === 1,
-                    'registrar_movimientos' => (int) ($rol['p_registrar_movimientos'] ?? 0) === 1,
+                    'registrar_movimientos' => $puedeRegistrarMovimientos,
                     'consultar_movimientos' => (int) ($rol['p_consultar_movimientos'] ?? 0) === 1,
                     'gestionar_roles' => $esRolEmpleado ? false : ((int) ($rol['p_gestionar_roles'] ?? 0) === 1),
                     'configuracion' => $esRolEmpleado ? false : ((int) ($rol['p_configuracion'] ?? 0) === 1),

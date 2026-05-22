@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../../modelos/RepositorioProveedor.php';
 require_once __DIR__ . '/../../../ayudantes/csrf.php';
 
 $repositorioProveedor = new RepositorioProveedor();
-$puedeGestionProveedores = ((int) ($permisos['registrar_productos'] ?? 0) === 1)
+$puedeGestionProveedores = ((int) ($permisos['registrar_movimientos'] ?? 0) === 1)
     || ((int) ($permisos['modificar_productos'] ?? 0) === 1)
     || ((int) ($permisos['configuracion'] ?? 0) === 1);
 

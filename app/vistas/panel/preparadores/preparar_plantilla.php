@@ -34,8 +34,8 @@ function prepararDatosPlantillaPanel(
 
         return match ($modulo) {
             'entradas', 'salidas' => $permisosActivos('registrar_movimientos') || $permisosActivos('consultar_movimientos'),
-            'productos' => $permisosActivos('registrar_productos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos'),
-            'proveedores' => $permisosActivos('registrar_productos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos') || $permisosActivos('configuracion'),
+            'productos' => $permisosActivos('registrar_movimientos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos'),
+            'proveedores' => $permisosActivos('registrar_movimientos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos') || $permisosActivos('configuracion'),
             default => false,
         };
     };
