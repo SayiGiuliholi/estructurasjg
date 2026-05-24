@@ -83,7 +83,7 @@ function prepararDatosModuloEntradas(array $contexto = []): array
                 ? ((string) ($ultimoMovimiento['descripcion'] ?? 'Sin descripcion')
                     . ' | '
                     . (string) ($ultimoMovimiento['proveedor'] ?? 'Proveedor no definido'))
-                : 'Aun no hay entradas registradas.',
+                : 'Aún no hay entradas registradas.',
             'valor' => $formatearMoneda((float) ($ultimoMovimiento['total'] ?? 0)),
             'tipo' => 'valor',
         ],

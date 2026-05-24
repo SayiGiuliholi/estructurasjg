@@ -88,7 +88,7 @@ $directorioProveedores = $directorioProveedores ?? [];
             <tbody>
                 <?php if (count($directorioProveedores) === 0): ?>
                     <tr>
-                        <td colspan="<?= (!isset($puedeGestionProveedores) || $puedeGestionProveedores) ? '6' : '5' ?>">Aun no hay proveedores registrados.</td>
+                        <td colspan="<?= (!isset($puedeGestionProveedores) || $puedeGestionProveedores) ? '6' : '5' ?>">Aún no hay proveedores registrados.</td>
                     </tr>
                 <?php endif; ?>
 
@@ -110,7 +110,9 @@ $directorioProveedores = $directorioProveedores ?? [];
                                     <form method="post" class="form-accion-tabla">
                                         <?= csrfCampoOculto() ?>
                                         <input type="hidden" name="id_proveedor" value="<?= htmlspecialchars((string) $proveedor['id_proveedor'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <button type="submit" name="accion" value="eliminar" class="boton-peligro">Eliminar</button>
+                                        <button type="submit" name="accion" value="<?= ($proveedor['activo'] ?? true) ? 'desactivar' : 'activar' ?>" class="<?= ($proveedor['activo'] ?? true) ? 'boton-peligro' : 'boton-principal' ?>">
+                                            <?= ($proveedor['activo'] ?? true) ? 'Desactivar' : 'Activar' ?>
+                                        </button>
                                     </form>
                                 </div>
                             </td>

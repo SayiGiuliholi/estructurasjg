@@ -11,9 +11,14 @@ require_once __DIR__ . '/../../../ayudantes/csrf.php';
 $repositorioUsuario = new RepositorioUsuario();
 $repositorioAuditoria = new RepositorioAuditoria();
 
+$permisosSesion = (array) (($_SESSION['autenticacion']['permisos'] ?? []));
 $esSuperadminSesion = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
-$esAdministradorSesion = $esSuperadminSesion
-    || strtolower(trim((string) ($_SESSION['autenticacion']['rol'] ?? ''))) === 'administrador';
+$puedeGestionarRoles = $esSuperadminSesion || ((int) ($permisosSesion['gestionar_roles'] ?? 0) === 1);
+$puedeAccederConfiguracion = $puedeGestionarRoles;
+
+if (!$puedeAccederConfiguracion) {
+    redirigirA('panel.php?modulo=entradas');
+}
 
 function esRolPrivilegiadoPorNombre(string $nombreRol): bool
 {
@@ -159,7 +164,7 @@ if (isset($_GET['editar_usuario'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrfEsValidoEnPost($_POST)) {
-        $mensajeError = 'Token de seguridad invalido. Recarga la pagina e intenta nuevamente.';
+        $mensajeError = 'Token de seguridad inválido. Recarga la página e intenta nuevamente.';
     } else {
     $accion = trim((string) ($_POST['accion'] ?? ''));
 
@@ -220,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 } else {
                     if (trim($contrasena) === '') {
-                        $mensajeError = 'La contrasena es obligatoria para crear un usuario.';
+                        $mensajeError = 'La contraseña es obligatoria para crear un usuario.';
                     } else {
                         $repositorioUsuario->crearUsuarioGestion($nombre, $usuario, $contrasena, $idRol, $estado);
                         $mensajeExito = 'Usuario creado correctamente.';
@@ -258,24 +263,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $esRolSuperadminObjetivo = esRolSuperadmin($repositorioUsuario, $idRolPermiso);
         $esRolEmpleadoObjetivo = esRolEmpleado($repositorioUsuario, $idRolPermiso);
 
-        if (!$esAdministradorSesion) {
-            $mensajeError = 'Solo los administradores pueden modificar permisos de rol.';
+        if (!$puedeGestionarRoles) {
+            $mensajeError = 'No tienes permiso para gestionar roles.';
         } elseif ($idRolPermiso <= 0) {
-            $mensajeError = 'Rol invalido para actualizar permisos.';
+            $mensajeError = 'Rol inválido para actualizar permisos.';
         } elseif ($esRolSuperadminObjetivo) {
-            $mensajeError = 'El rol Superadmin es protegido y no se edita desde esta seccion.';
+            $mensajeError = 'El rol Superadmin es protegido y no se edita desde esta sección.';
         } elseif (!$esSuperadminSesion && !$esRolEmpleadoObjetivo) {
             $mensajeError = 'Como Administrador solo puedes modificar permisos del rol Empleado.';
         } else {
             try {
                 $permisoRegistrarMovimientos = isset($_POST['registrar_movimientos']) ? 1 : 0;
+                $permisoGestionarRoles = isset($_POST['gestionar_roles']) ? 1 : 0;
                 $repositorioUsuario->actualizarPermisosRol($idRolPermiso, [
                     'registrar_productos' => $permisoRegistrarMovimientos,
                     'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
                     'registrar_movimientos' => $permisoRegistrarMovimientos,
                     'consultar_movimientos' => isset($_POST['consultar_movimientos']) ? 1 : 0,
-                    'gestionar_roles' => $esRolEmpleadoObjetivo ? 0 : (isset($_POST['gestionar_roles']) ? 1 : 0),
-                    'configuracion' => $esRolEmpleadoObjetivo ? 0 : (isset($_POST['configuracion']) ? 1 : 0),
+                    'gestionar_roles' => $esRolEmpleadoObjetivo ? 0 : $permisoGestionarRoles,
+                    'configuracion' => $esRolEmpleadoObjetivo ? 0 : $permisoGestionarRoles,
                 ]);
 
                 refrescarSesionAutenticacionActual($repositorioUsuario);
@@ -292,8 +298,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'modificar_productos' => isset($_POST['modificar_productos']) ? 1 : 0,
                         'registrar_movimientos' => $permisoRegistrarMovimientos,
                         'consultar_movimientos' => isset($_POST['consultar_movimientos']) ? 1 : 0,
-                        'gestionar_roles' => isset($_POST['gestionar_roles']) ? 1 : 0,
-                        'configuracion' => isset($_POST['configuracion']) ? 1 : 0,
+                        'gestionar_roles' => $permisoGestionarRoles,
+                        'configuracion' => $permisoGestionarRoles,
                     ],
                 ]);
             } catch (Throwable $error) {

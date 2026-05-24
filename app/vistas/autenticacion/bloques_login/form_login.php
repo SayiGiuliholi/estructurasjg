@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $mensajeError = $mensajeError ?? null;
 $accionFormulario = $accionFormulario ?? '';
 $ultimoUsuario = $ultimoUsuario ?? '';

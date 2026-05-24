@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../ayudantes/csrf.php';
 $repositorioProveedor = new RepositorioProveedor();
 $puedeGestionProveedores = ((int) ($permisos['registrar_movimientos'] ?? 0) === 1)
     || ((int) ($permisos['modificar_productos'] ?? 0) === 1)
-    || ((int) ($permisos['configuracion'] ?? 0) === 1);
+    || ((int) ($permisos['gestionar_roles'] ?? 0) === 1);
 
 $mensajeExito = '';
 $mensajeError = '';
@@ -22,6 +22,12 @@ $fichaProveedor = [
     'telefono' => '',
     'direccion' => '',
 ];
+
+try {
+    $repositorioProveedor->prepararSoporteEstado();
+} catch (Throwable $error) {
+    $mensajeError = 'No se pudo preparar el estado de proveedores. Revisa permisos de base de datos.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrfEsValidoEnPost($_POST)) {
@@ -83,12 +89,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $repositorioProveedor->actualizar($idProveedorPost, $datosFormulario);
                 $mensajeExito = 'Proveedor actualizado correctamente.';
             }
-        } elseif ($accion === 'eliminar') {
+        } elseif ($accion === 'desactivar') {
             if ($idProveedorPost <= 0) {
-                $mensajeError = 'No se encontro el proveedor a eliminar.';
+                $mensajeError = 'No se encontro el proveedor a desactivar.';
             } else {
-                $repositorioProveedor->eliminar($idProveedorPost);
-                $mensajeExito = 'Proveedor eliminado correctamente.';
+                $repositorioProveedor->cambiarEstado($idProveedorPost, false);
+                $mensajeExito = 'Proveedor desactivado correctamente.';
+            }
+        } elseif ($accion === 'activar') {
+            if ($idProveedorPost <= 0) {
+                $mensajeError = 'No se encontro el proveedor a activar.';
+            } else {
+                $repositorioProveedor->cambiarEstado($idProveedorPost, true);
+                $mensajeExito = 'Proveedor activado correctamente.';
             }
         } elseif ($accion === 'cargar') {
             if ($idProveedorPost > 0) {
@@ -111,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } catch (Throwable $error) {
-        if ($accion === 'eliminar') {
-            $mensajeError = 'No fue posible eliminar el proveedor. Verifica si tiene productos relacionados.';
+        if ($accion === 'desactivar' || $accion === 'activar') {
+            $mensajeError = 'No fue posible cambiar el estado del proveedor.';
         } else {
             $mensajeError = 'No fue posible completar la operacion. Revisa datos duplicados (RUC) e intenta de nuevo.';
         }

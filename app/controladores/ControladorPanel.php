@@ -26,8 +26,6 @@ final class ControladorPanel
             return true;
         }
 
-        $esAdministrador = strtolower(trim((string) ($autenticacion['rol'] ?? ''))) === 'administrador';
-
         return match ($modulo) {
             'entradas', 'salidas' => $this->permisoActivo($permisos, 'registrar_movimientos')
                 || $this->permisoActivo($permisos, 'consultar_movimientos'),
@@ -39,10 +37,9 @@ final class ControladorPanel
             'proveedores' => $this->permisoActivo($permisos, 'registrar_movimientos')
                 || $this->permisoActivo($permisos, 'modificar_productos')
                 || $this->permisoActivo($permisos, 'consultar_movimientos')
-                || $this->permisoActivo($permisos, 'configuracion'),
+                || $this->permisoActivo($permisos, 'gestionar_roles'),
 
-            // Configuracion queda reservada para administradores.
-            'configuracion' => $esAdministrador,
+            'configuracion' => $this->permisoActivo($permisos, 'gestionar_roles'),
 
             default => false,
         };

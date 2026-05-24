@@ -12,7 +12,7 @@ ob_start();
 ?>
 <div class="rejilla">
     <article class="tarjeta">
-        <h3>Datos de sesion</h3>
+        <h3>Datos de sesión</h3>
         <p>Usuario: <?= htmlspecialchars($autenticacion['usuario'], ENT_QUOTES, 'UTF-8') ?></p>
         <p>Nombre: <?= htmlspecialchars($autenticacion['nombre'], ENT_QUOTES, 'UTF-8') ?></p>
         <span class="etiqueta">Rol: <?= htmlspecialchars($autenticacion['rol'], ENT_QUOTES, 'UTF-8') ?></span>
@@ -28,9 +28,9 @@ ob_start();
     </article>
 
     <article class="tarjeta">
-        <h3>Navegacion organizada</h3>
+        <h3>Navegación organizada</h3>
         <p>El menu lateral ahora contiene solo Entradas, Productos, Proveedores y Salidas.</p>
-        <p>Configuracion permanece fuera del menu y se consulta desde el engranaje superior.</p>
+        <p>Configuración permanece fuera del menú y se consulta desde el engranaje superior.</p>
     </article>
 
     <article class="tarjeta">

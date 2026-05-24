@@ -27,7 +27,7 @@ function prepararDatosModuloProveedores(array $contexto = []): array
 
     $directorioProveedores = array_map(
         static function (Proveedor $proveedor): array {
-            $activo = $proveedor->totalProductos > 0;
+            $activo = $proveedor->activo;
 
             return [
                 'id_proveedor' => $proveedor->idProveedor,
@@ -35,8 +35,9 @@ function prepararDatosModuloProveedores(array $contexto = []): array
                 'nombre' => $proveedor->nombre,
                 'telefono' => $proveedor->telefono,
                 'direccion' => $proveedor->direccion,
-                'estado' => $activo ? 'Activo' : 'Sin productos',
+                'estado' => $activo ? 'Activo' : 'Inactivo',
                 'tipoEstado' => $activo ? 'ok' : 'alerta',
+                'activo' => $activo,
             ];
         },
         $proveedores

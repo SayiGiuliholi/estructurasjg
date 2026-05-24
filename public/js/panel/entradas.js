@@ -110,6 +110,25 @@
         }
     }
 
+    function limpiarProductoDeFila(fila, conservarCantidad) {
+        var descripcion = fila.querySelector('.js-entrada-descripcion');
+        var cantidad = fila.querySelector('.js-cantidad');
+        var precio = fila.querySelector('.js-precio');
+
+        if (descripcion) {
+            descripcion.value = '';
+            descripcion.readOnly = false;
+        }
+        if (precio) {
+            precio.value = '';
+            precio.readOnly = false;
+        }
+        if (!conservarCantidad && cantidad) {
+            cantidad.value = '1';
+        }
+        fila.dataset.codigoAutocompletado = '';
+    }
+
     function autocompletarFila(fila) {
         if (!fila || apiProducto === '') {
             return;
@@ -161,18 +180,9 @@
                 var descripcion = String(datos.producto.descripcion || '').trim();
                 var precio = Number(datos.producto.precio || 0);
                 var idProveedorProducto = String(datos.producto.id_proveedor || '').trim();
-                var descripcionActual = String(inputDescripcion.value || '').trim();
-                var precioActual = Math.max(0, obtenerValorNumero(inputPrecio, 0));
-
-                // Solo autocompleta descripcion si el usuario no ha escrito una.
-                if (descripcion !== '' && descripcionActual === '') {
-                    inputDescripcion.value = descripcion;
-                }
-
-                // Solo autocompleta precio si el usuario no ha digitado uno.
-                if (precio > 0 && precioActual <= 0) {
-                    inputPrecio.value = formatearMoneda(precio);
-                }
+                // El codigo manda: si cambia el codigo, se refresca siempre descripcion y precio.
+                inputDescripcion.value = descripcion;
+                inputPrecio.value = precio > 0 ? formatearMoneda(precio) : '';
 
                 // Para productos existentes solo se permite cambiar cantidad.
                 inputDescripcion.readOnly = true;
@@ -190,9 +200,9 @@
                 if (codigoActual !== codigoSolicitado) {
                     return;
                 }
-                // Si no existe el codigo, se permite captura manual de descripcion y precio.
-                inputDescripcion.readOnly = false;
-                inputPrecio.readOnly = false;
+                // Si no existe el codigo, se limpia el autocompletado previo y se permite captura manual.
+                limpiarProductoDeFila(fila, true);
+                recalcularFactura();
             });
     }
 
@@ -251,16 +261,9 @@
                 return;
             }
 
-            var inputDescripcion = filaCodigo.querySelector('.js-entrada-descripcion');
-            var inputPrecio = filaCodigo.querySelector('.js-precio');
-            if (inputDescripcion) {
-                inputDescripcion.readOnly = false;
-            }
-            if (inputPrecio) {
-                inputPrecio.readOnly = false;
-            }
+            limpiarProductoDeFila(filaCodigo, true);
             filaCodigo.dataset.codigoPendiente = '';
-            filaCodigo.dataset.codigoAutocompletado = '';
+            recalcularFactura();
 
             if (temporizadorCodigo) {
                 clearTimeout(temporizadorCodigo);

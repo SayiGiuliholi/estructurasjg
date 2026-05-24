@@ -32,7 +32,7 @@ $paginacion = $paginacion ?? [
 <article class="tarjeta bloque formulario-flujo">
     <div class="cabecera-modulo">
         <div>
-            <h3 class="subtitulo">Informacion de la salida</h3>
+            <h3 class="subtitulo">Información de la salida</h3>
             
         </div>
     </div>
@@ -97,7 +97,7 @@ $paginacion = $paginacion ?? [
                     <label for="salida-motivo">Tipo de salida</label>
                     <select id="salida-motivo" name="motivo_salida" required>
                         <option value="normal" <?= $formularioSalida['motivo_salida'] === 'normal' ? 'selected' : '' ?>>Normal</option>
-                        <option value="devolucion" <?= $formularioSalida['motivo_salida'] === 'devolucion' ? 'selected' : '' ?>>Devolucion</option>
+                        <option value="devolucion" <?= $formularioSalida['motivo_salida'] === 'devolucion' ? 'selected' : '' ?>>Devolución</option>
                         <option value="fallo" <?= $formularioSalida['motivo_salida'] === 'fallo' ? 'selected' : '' ?>>Fallo</option>
                         <option value="traslado" <?= $formularioSalida['motivo_salida'] === 'traslado' ? 'selected' : '' ?>>Traslado</option>
                     </select>
@@ -182,7 +182,7 @@ $paginacion = $paginacion ?? [
             <div class="campo campo-total-factura">
                 <label for="salida-total-factura">Total de la salida</label>
                 <input id="salida-total-factura" type="text" value="<?= htmlspecialchars($formularioSalida['total_factura'], ENT_QUOTES, 'UTF-8') ?>" readonly>
-                <span class="ayuda-campo" id="salida-validacion">La factura se valida por stock en cada linea.</span>
+                <span class="ayuda-campo" id="salida-validacion">La factura se valida por stock en cada línea.</span>
             </div>
 
             <div class="fila-acciones">
@@ -225,7 +225,7 @@ $paginacion = $paginacion ?? [
     <form class="historial-filtros historial-filtros-salidas" id="salidas-filtros-form" onsubmit="return false;">
         <div class="campo campo-busqueda">
             <label for="salidas-filtro-buscar">Buscar salida</label>
-            <input id="salidas-filtro-buscar" type="text" placeholder="Buscar factura, codigo o producto...">
+            <input id="salidas-filtro-buscar" type="text" placeholder="Buscar factura, código o producto...">
         </div>
 
         <div class="campo">
@@ -267,7 +267,7 @@ $paginacion = $paginacion ?? [
             <tbody>
                 <?php if (count($historialSalidas) === 0): ?>
                     <tr>
-                        <td colspan="8">Aun no hay salidas registradas.</td>
+                        <td colspan="8">Aún no hay salidas registradas.</td>
                     </tr>
                 <?php endif; ?>
 
@@ -304,7 +304,7 @@ $paginacion = $paginacion ?? [
         <form method="get" class="paginacion-form">
             <input type="hidden" name="modulo" value="salidas">
             <input type="hidden" name="pagina" value="1">
-            <label for="salidas-por-pagina">Registros por pagina</label>
+            <label for="salidas-por-pagina">Registros por página</label>
             <select id="salidas-por-pagina" name="por_pagina" onchange="this.form.submit()">
                 <?php foreach ($paginacion['opcionesPorPagina'] as $opcion): ?>
                     <option value="<?= htmlspecialchars((string) $opcion, ENT_QUOTES, 'UTF-8') ?>" <?= (int) $paginacion['porPagina'] === (int) $opcion ? 'selected' : '' ?>>
@@ -325,7 +325,7 @@ $paginacion = $paginacion ?? [
                 $porPaginaActual = (int) $paginacion['porPagina'];
                 ?>
                 <a class="boton-fantasma <?= $paginaActual <= 1 ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'salidas', 'pagina' => max(1, $paginaActual - 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Anterior</a>
-                <span class="paginacion-texto">Pagina <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="paginacion-texto">Página <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
                 <a class="boton-fantasma <?= $paginaActual >= $totalPaginas ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'salidas', 'pagina' => min($totalPaginas, $paginaActual + 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Siguiente</a>
             </div>
         <?php endif; ?>

@@ -1,7 +1,4 @@
-<?php
-
-declare(strict_types=1);
-
+﻿<?php
 $mensajeExito = $mensajeExito ?? '';
 $mensajeError = $mensajeError ?? '';
 $formularioUsuario = $formularioUsuario ?? ['id_usuario'=>0,'nombre'=>'','usuario'=>'','id_rol'=>'','estado'=>1];
@@ -10,6 +7,8 @@ $usuarios = $usuarios ?? [];
 $rolesConPermisos = $rolesConPermisos ?? [];
 $auditoriaEventos = $auditoriaEventos ?? [];
 $esSuperadminVista = esSuperadminSesion($_SESSION['autenticacion'] ?? []);
+$permisosSesionVista = (array) (($_SESSION['autenticacion']['permisos'] ?? []));
+$puedeGestionarRolesVista = $esSuperadminVista || ((int) ($permisosSesionVista['gestionar_roles'] ?? 0) === 1);
 $seccionConfiguracion = trim((string) ($_GET['seccion'] ?? 'gestion'));
 $esSeccionAuditoria = $esSuperadminVista && $seccionConfiguracion === 'auditoria';
 $accionPostConfiguracion = trim((string) ($_POST['accion'] ?? ''));
@@ -24,12 +23,12 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
             <a
                 class="<?= $esSeccionAuditoria ? 'boton-fantasma' : 'boton-principal' ?>"
                 href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion']), ENT_QUOTES, 'UTF-8') ?>"
-            >Gestion</a>
+            >Gestión</a>
             <?php if ($esSuperadminVista): ?>
                 <a
                     class="<?= $esSeccionAuditoria ? 'boton-principal' : 'boton-fantasma' ?>"
                     href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'auditoria']), ENT_QUOTES, 'UTF-8') ?>"
-                >Auditoria</a>
+                >Auditoría</a>
             <?php endif; ?>
         </div>
     </article>
@@ -48,7 +47,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
             <div class="cabecera-modulo">
                 <div>
                     <h3 class="subtitulo" id="configuracion-modal-usuario-titulo"><?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Modificar usuario' : 'Crear usuario' ?></h3>
-                    <p>Desde aqui administras cuentas de empleados, rol asignado y estado del usuario.</p>
+                    <p>Desde aquí administras cuentas de empleados, rol asignado y estado del usuario.</p>
                 </div>
                 <a class="boton-fantasma productos-modal-cerrar" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion']), ENT_QUOTES, 'UTF-8') ?>">Cancelar</a>
             </div>
@@ -82,7 +81,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
 
                 <div class="campo">
                     <label for="cfg-contrasena">
-                        <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contrasena (opcional para cambiar)' : 'Contrasena' ?>
+                        <?= (int) $formularioUsuario['id_usuario'] > 0 ? 'Contraseña (opcional para cambiar)' : 'Contraseña' ?>
                     </label>
                     <input id="cfg-contrasena" name="contrasena" type="password" <?= (int) $formularioUsuario['id_usuario'] > 0 ? '' : 'required' ?>>
                 </div>
@@ -105,7 +104,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                 <div class="control-linea campo-amplio control-linea-estado">
                     <div>
                         <strong>Usuario activo</strong>
-                        <span>ON: puede iniciar sesion. OFF: usuario bloqueado.</span>
+                        <span>ON: puede iniciar sesión. OFF: usuario bloqueado.</span>
                         <div class="control-estado-usuario">
                             <span class="etiqueta-estado-usuario <?= (int) $formularioUsuario['estado'] === 1 ? 'activo' : 'inactivo' ?>">
                                 <?= (int) $formularioUsuario['estado'] === 1 ? 'Activo' : 'Deshabilitado' ?>
@@ -133,28 +132,24 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                 <h3 class="subtitulo">Usuarios del sistema</h3>
                 <p>Listado de cuentas registradas para operar el sistema.</p>
             </div>
-            <div class="fila-acciones">
-                <a class="boton-principal" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion', 'crear_usuario' => 1]), ENT_QUOTES, 'UTF-8') ?>">Crear usuario</a>
-            </div>
         </div>
 
         <div class="tabla-contenedor">
             <table class="tabla">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nombre</th>
                         <th>Usuario</th>
                         <th>Rol</th>
                         <th>Estado</th>
-                        <th>Ultimo acceso</th>
+                        <th>Último acceso</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (count($usuarios) === 0): ?>
                         <tr>
-                            <td colspan="7">No hay usuarios registrados.</td>
+                            <td colspan="6">No hay usuarios registrados.</td>
                         </tr>
                     <?php endif; ?>
 
@@ -166,7 +161,6 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                         $puedeEditarUsuario = !$esUsuarioSuperadmin && ($esSuperadminVista || !$esUsuarioAdministrador);
                         ?>
                         <tr>
-                            <td><?= htmlspecialchars((string) $usuario['id_usuario'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) $usuario['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) $usuario['usuario'], ENT_QUOTES, 'UTF-8') ?></td>
                             <td><?= htmlspecialchars((string) $usuario['rol'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -187,13 +181,18 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                 </tbody>
             </table>
         </div>
+        <?php if ($esSuperadminVista): ?>
+            <div class="fila-acciones" style="border-top:1px solid var(--borde); margin: 0 22px 22px; padding-top: 14px;">
+                <a class="boton-principal" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'configuracion', 'seccion' => 'gestion', 'crear_usuario' => 1]), ENT_QUOTES, 'UTF-8') ?>">Crear usuario</a>
+            </div>
+        <?php endif; ?>
     </article>
 
     <article class="tarjeta bloque">
         <div class="cabecera-modulo">
             <div>
                 <h3 class="subtitulo">Permisos por rol</h3>
-                <p>Activa o desactiva permisos para empleados segun el rol.</p>
+                <p>Activa o desactiva permisos para empleados según el rol.</p>
             </div>
         </div>
 
@@ -202,8 +201,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
             'modificar_productos' => 'Editar datos, precio o estado de productos.',
             'registrar_movimientos' => 'Registrar movimientos de inventario (incluye altas operativas y entradas/salidas).',
             'consultar_movimientos' => 'Ver historial de entradas, salidas y productos.',
-            'gestionar_roles' => 'Cambiar permisos por rol.',
-            'configuracion' => 'Entrar al modulo de configuracion.',
+            'gestionar_roles' => 'Permite acceder al módulo de configuración y administrar permisos.',
         ];
         ?>
         <?php foreach ($rolesConPermisos as $rol): ?>
@@ -214,7 +212,10 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
             }
             $esRolAdministrador = $nombreRolNormalizado === 'administrador';
             $esRolEmpleado = $nombreRolNormalizado === 'empleado';
-            $puedeEditarPermisosRol = $esSuperadminVista || !$esRolAdministrador;
+            if ($esRolAdministrador && !$esSuperadminVista) {
+                continue;
+            }
+            $puedeEditarPermisosRol = $puedeGestionarRolesVista && ($esSuperadminVista || !$esRolAdministrador);
             ?>
             <form method="post" class="tarjeta" style="border-radius: 12px; box-shadow: none;">
                 <?= csrfCampoOculto() ?>
@@ -224,7 +225,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                 <div class="cabecera-modulo">
                     <div>
                         <h3 class="subtitulo" style="margin-bottom:6px;"><?= htmlspecialchars((string) $rol['nombre'], ENT_QUOTES, 'UTF-8') ?></h3>
-                        <p>Define que puede hacer este rol en el sistema.</p>
+                        <p>Define qué puede hacer este rol en el sistema.</p>
                     </div>
                     <?php if ($puedeEditarPermisosRol): ?>
                         <button type="submit" class="boton-principal">Guardar permisos</button>
@@ -260,15 +261,8 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                         <label class="permiso-item">
                             <input type="checkbox" name="gestionar_roles" <?= $rol['permisos']['gestionar_roles'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
                             <span class="permiso-texto">
-                                <strong>Gestionar roles</strong>
+                                <strong>Configuración</strong>
                                 <small><?= htmlspecialchars($ayudaPermisos['gestionar_roles'], ENT_QUOTES, 'UTF-8') ?></small>
-                            </span>
-                        </label>
-                        <label class="permiso-item">
-                            <input type="checkbox" name="configuracion" <?= $rol['permisos']['configuracion'] ? 'checked' : '' ?> <?= $puedeEditarPermisosRol ? '' : 'disabled' ?>>
-                            <span class="permiso-texto">
-                                <strong>Configuracion</strong>
-                                <small><?= htmlspecialchars($ayudaPermisos['configuracion'], ENT_QUOTES, 'UTF-8') ?></small>
                             </span>
                         </label>
                     <?php endif; ?>
@@ -282,7 +276,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
         <article class="tarjeta tarjeta-tabla">
             <div class="cabecera-modulo" style="padding: 22px 22px 0;">
                 <div>
-                    <h3 class="subtitulo">Auditoria</h3>
+                    <h3 class="subtitulo">Auditoría</h3>
                     <p>Movimientos y cambios realizados por cada persona en el sistema.</p>
                 </div>
             </div>
@@ -293,8 +287,8 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                         <tr>
                             <th>Fecha</th>
                             <th>Usuario</th>
-                            <th>Modulo</th>
-                            <th>Accion</th>
+                            <th>Módulo</th>
+                            <th>Acción</th>
                             <th>Entidad</th>
                             <th>ID entidad</th>
                             <th>Detalle</th>
@@ -303,7 +297,7 @@ $mostrarModalUsuario = !$esSeccionAuditoria && ($solicitaCrearUsuario || $estaEd
                     <tbody>
                         <?php if (count($auditoriaEventos) === 0): ?>
                             <tr>
-                                <td colspan="7">Aun no hay eventos de auditoria registrados.</td>
+                                <td colspan="7">Aún no hay eventos de auditoría registrados.</td>
                             </tr>
                         <?php endif; ?>
                         <?php foreach ($auditoriaEventos as $evento): ?>

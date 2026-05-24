@@ -246,7 +246,7 @@ $paginacion = $paginacion ?? [
             <tbody>
                 <?php if (count($historialEntradas) === 0): ?>
                     <tr>
-                        <td colspan="9">Aun no hay entradas registradas.</td>
+                        <td colspan="9">Aún no hay entradas registradas.</td>
                     </tr>
                 <?php endif; ?>
 
@@ -284,7 +284,7 @@ $paginacion = $paginacion ?? [
         <form method="get" class="paginacion-form">
             <input type="hidden" name="modulo" value="entradas">
             <input type="hidden" name="pagina" value="1">
-            <label for="entradas-por-pagina">Registros por pagina</label>
+            <label for="entradas-por-pagina">Registros por página</label>
             <select id="entradas-por-pagina" name="por_pagina" onchange="this.form.submit()">
                 <?php foreach ($paginacion['opcionesPorPagina'] as $opcion): ?>
                     <option value="<?= htmlspecialchars((string) $opcion, ENT_QUOTES, 'UTF-8') ?>" <?= (int) $paginacion['porPagina'] === (int) $opcion ? 'selected' : '' ?>>
@@ -305,7 +305,7 @@ $paginacion = $paginacion ?? [
                 $porPaginaActual = (int) $paginacion['porPagina'];
                 ?>
                 <a class="boton-fantasma <?= $paginaActual <= 1 ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'entradas', 'pagina' => max(1, $paginaActual - 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Anterior</a>
-                <span class="paginacion-texto">Pagina <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="paginacion-texto">Página <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
                 <a class="boton-fantasma <?= $paginaActual >= $totalPaginas ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'entradas', 'pagina' => min($totalPaginas, $paginaActual + 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Siguiente</a>
             </div>
         <?php endif; ?>

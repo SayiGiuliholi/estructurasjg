@@ -864,10 +864,10 @@ body {
 .tabla-historial-salidas td:nth-child(4),
 .tabla-historial-salidas th:nth-child(7),
 .tabla-historial-salidas td:nth-child(7),
-.tabla-historial-productos th:nth-child(6),
-.tabla-historial-productos td:nth-child(6),
-.tabla-historial-productos th:nth-child(7),
-.tabla-historial-productos td:nth-child(7) {
+.tabla-historial-productos th:nth-child(4),
+.tabla-historial-productos td:nth-child(4),
+.tabla-historial-productos th:nth-child(5),
+.tabla-historial-productos td:nth-child(5) {
     text-align: right;
     font-variant-numeric: tabular-nums;
 }
@@ -927,6 +927,18 @@ body {
 .tabla-proveedores .acciones-tabla {
     justify-content: flex-start;
     gap: 10px;
+    flex-wrap: nowrap;
+}
+
+.tabla-historial-productos th:last-child,
+.tabla-historial-productos td:last-child {
+    width: 1%;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.tabla-historial-productos .acciones-tabla {
+    justify-content: flex-start;
     flex-wrap: nowrap;
 }
 

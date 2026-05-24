@@ -204,7 +204,7 @@ $paginacion = $datosModulo['paginacion'];
 $rutaArchivoScriptProductos = __DIR__ . '/../../../../public/js/panel/productos.js';
 $versionScriptProductos = is_file($rutaArchivoScriptProductos) ? (string) filemtime($rutaArchivoScriptProductos) : '1';
 $urlScriptProductos = construirUrlPublica('js/panel/productos.js') . '?v=' . rawurlencode($versionScriptProductos);
-$directorioProveedores = $repositorioProveedor->obtenerTodos();
+$directorioProveedores = $repositorioProveedor->obtenerActivos();
 
 ob_start();
 require __DIR__ . '/../modulos/vista_productos.php';

@@ -20,7 +20,7 @@ $urlSalir = $urlSalir ?? '';
             <h3 class="sidebar-brand-title">Estructuras JG</h3>
         </div>
 
-        <nav class="menu" aria-label="Navegacion principal">
+        <nav class="menu" aria-label="Navegación principal">
             <?php
             $iconosMenu = [
                 'entradas' => 'inbox',

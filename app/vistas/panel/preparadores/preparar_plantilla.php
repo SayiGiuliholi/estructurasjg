@@ -16,9 +16,7 @@ function prepararDatosPlantillaPanel(
 ): array {
     $permisosActivos = static fn(string $clave): bool => ((int) ($permisos[$clave] ?? 0)) === 1;
     $esSuperadmin = esSuperadminSesion($autenticacion);
-    $esAdministrador = $esSuperadmin
-        || strtolower((string) ($autenticacion['rol'] ?? '')) === 'administrador'
-        || (int) ($autenticacion['id_rol'] ?? 0) === 1;
+    $puedeVerConfiguracion = $esSuperadmin || $permisosActivos('gestionar_roles');
 
     $itemsMenuBase = [
         'entradas' => 'Entradas',
@@ -35,7 +33,7 @@ function prepararDatosPlantillaPanel(
         return match ($modulo) {
             'entradas', 'salidas' => $permisosActivos('registrar_movimientos') || $permisosActivos('consultar_movimientos'),
             'productos' => $permisosActivos('registrar_movimientos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos'),
-            'proveedores' => $permisosActivos('registrar_movimientos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos') || $permisosActivos('configuracion'),
+            'proveedores' => $permisosActivos('registrar_movimientos') || $permisosActivos('modificar_productos') || $permisosActivos('consultar_movimientos') || $permisosActivos('gestionar_roles'),
             default => false,
         };
     };
@@ -56,7 +54,7 @@ function prepararDatosPlantillaPanel(
         'contenidoModulo' => $datosVista['contenidoModulo'] ?? '',
         'scriptsModulo' => $datosVista['scriptsModulo'] ?? '',
         'itemsMenu' => $itemsMenu,
-        'puedeVerConfiguracion' => $esAdministrador,
+        'puedeVerConfiguracion' => $puedeVerConfiguracion,
         'nombreUsuario' => $autenticacion['nombre'] ?? '',
         'usuarioAcceso' => $autenticacion['usuario'] ?? '',
         'nombreRol' => $autenticacion['rol'] ?? '',

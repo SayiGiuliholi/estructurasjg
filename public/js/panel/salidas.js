@@ -42,7 +42,7 @@
         if (traslado) {
             setMensaje('Modo traslado: se descuenta de origen y se suma en bodega destino.', 'ok');
         } else {
-            setMensaje('Factura validada por stock en cada linea.', 'ok');
+            setMensaje('Factura validada por stock en cada línea.', 'ok');
         }
     }
 
@@ -164,7 +164,7 @@
         if (esTrasladoActivo()) {
             setMensaje('Modo traslado: se descuenta de origen y se suma en bodega destino.', 'ok');
         } else {
-            setMensaje('Factura validada por stock en cada linea.', 'ok');
+            setMensaje('Factura validada por stock en cada línea.', 'ok');
         }
         return true;
     }
@@ -224,7 +224,7 @@
                 if (String(error.message || '').toLowerCase().indexOf('desactivado') !== -1) {
                     fila.dataset.productoBloqueado = '1';
                 }
-                setMensaje(error.message || 'No se pudo autocompletar una linea.', 'error');
+                setMensaje(error.message || 'No se pudo autocompletar una línea.', 'error');
                 recalcularFactura();
             });
     }

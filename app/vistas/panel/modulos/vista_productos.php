@@ -153,7 +153,7 @@ $mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos
     <?php
     $catalogoPrincipal = $catalogoPrincipal ?? [];
     $catalogoSecundaria = $catalogoSecundaria ?? [];
-    $columnasTabla = (!isset($puedeGestionProductos) || $puedeGestionProductos) ? 8 : 7;
+    $columnasTabla = (!isset($puedeGestionProductos) || $puedeGestionProductos) ? 7 : 6;
     $renderTablaBodega = static function (array $productosTabla, string $tituloBodega, string $idTabla, string $idVacio, string $claveBodega) use ($columnasTabla, $puedeGestionProductos): void {
         ?>
         <article class="tarjeta bloque bloque-bodega-productos js-panel-bodega" data-bodega="<?= htmlspecialchars($claveBodega, ENT_QUOTES, 'UTF-8') ?>">
@@ -168,7 +168,6 @@ $mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos
                         <tr>
                             <th>Codigo</th>
                             <th>Producto</th>
-                            <th>Proveedor</th>
                             <th>Bodega(s)</th>
                             <th>Stock</th>
                             <th>Precio</th>
@@ -196,7 +195,6 @@ $mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos
                             >
                                 <td><?= htmlspecialchars($producto['codigo'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($producto['descripcion'], ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($producto['proveedor'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($producto['bodegas'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($producto['stock'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($producto['precio'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -241,7 +239,7 @@ $mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos
         <form method="get" class="paginacion-form">
             <input type="hidden" name="modulo" value="productos">
             <input type="hidden" name="pagina" value="1">
-            <label for="productos-por-pagina">Registros por pagina</label>
+            <label for="productos-por-pagina">Registros por página</label>
             <select id="productos-por-pagina" name="por_pagina" onchange="this.form.submit()">
                 <?php foreach ($paginacion['opcionesPorPagina'] as $opcion): ?>
                     <option value="<?= htmlspecialchars((string) $opcion, ENT_QUOTES, 'UTF-8') ?>" <?= (int) $paginacion['porPagina'] === (int) $opcion ? 'selected' : '' ?>>
@@ -259,7 +257,7 @@ $mostrarModalEdicion = (!isset($puedeGestionProductos) || $puedeGestionProductos
                 $porPaginaActual = (int) $paginacion['porPagina'];
                 ?>
                 <a class="boton-fantasma <?= $paginaActual <= 1 ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'productos', 'pagina' => max(1, $paginaActual - 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Anterior</a>
-                <span class="paginacion-texto">Pagina <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="paginacion-texto">Página <?= htmlspecialchars((string) $paginaActual, ENT_QUOTES, 'UTF-8') ?> de <?= htmlspecialchars((string) $totalPaginas, ENT_QUOTES, 'UTF-8') ?></span>
                 <a class="boton-fantasma <?= $paginaActual >= $totalPaginas ? 'deshabilitado' : '' ?>" href="?<?= htmlspecialchars(http_build_query(['modulo' => 'productos', 'pagina' => min($totalPaginas, $paginaActual + 1), 'por_pagina' => $porPaginaActual]), ENT_QUOTES, 'UTF-8') ?>">Siguiente</a>
             </div>
         <?php endif; ?>

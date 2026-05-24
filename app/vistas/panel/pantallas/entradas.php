@@ -220,7 +220,7 @@ if ($paginaActual > $totalPaginas) {
 }
 $offset = ($paginaActual - 1) * $porPagina;
 $historialEntradas = $repositorioEntrada->obtenerHistorial($porPagina, $offset);
-$proveedores = $repositorioProveedor->obtenerTodos();
+$proveedores = $repositorioProveedor->obtenerActivos();
 $bodegas = $repositorioBodega->obtenerActivas();
 
 $datosModulo = prepararDatosModuloEntradas([

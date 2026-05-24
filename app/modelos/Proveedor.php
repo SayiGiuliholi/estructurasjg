@@ -11,6 +11,7 @@ final class Proveedor
         public string $telefono,
         public string $direccion,
         public int $totalProductos = 0,
+        public bool $activo = true,
     ) {
     }
 }
